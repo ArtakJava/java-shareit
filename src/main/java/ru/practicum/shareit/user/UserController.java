@@ -3,7 +3,6 @@ package ru.practicum.shareit.user;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.shareit.CustomJsonPatch;
 import ru.practicum.shareit.messageManager.InfoMessage;
 import ru.practicum.shareit.user.dto.UserDto;
 
@@ -36,9 +35,9 @@ public class UserController {
     }
 
     @PatchMapping("/{userId}")
-    public UserDto update(@PathVariable long userId, @RequestBody CustomJsonPatch patch) {
-        log.info(InfoMessage.GET_UPDATE_REQUEST, patch);
-        return service.update(userId, patch);
+    public UserDto update(@PathVariable long userId, @RequestBody UserDto userDto) throws NoSuchFieldException, IllegalAccessException {
+        log.info(InfoMessage.GET_UPDATE_REQUEST, userDto);
+        return service.update(userId, userDto);
     }
 
     @DeleteMapping("/{userId}")

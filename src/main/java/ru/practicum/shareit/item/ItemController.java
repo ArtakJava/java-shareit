@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.messageManager.InfoMessage;
-import ru.practicum.shareit.CustomJsonPatch;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -38,9 +37,9 @@ public class ItemController {
     @PatchMapping("/{itemId}")
     public ItemDto update(@RequestHeader("X-Sharer-User-Id") long userId,
                           @PathVariable long itemId,
-                          @RequestBody CustomJsonPatch patch) {
-        log.info(InfoMessage.GET_UPDATE_REQUEST, patch);
-        return service.update(userId, itemId, patch);
+                          @RequestBody ItemDto itemDtoPatch) throws NoSuchFieldException, IllegalAccessException {
+        log.info(InfoMessage.GET_UPDATE_REQUEST, itemDtoPatch);
+        return service.update(userId, itemId, itemDtoPatch);
     }
 
     @DeleteMapping("/{itemId}")

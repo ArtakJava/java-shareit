@@ -1,29 +1,28 @@
 package ru.practicum.shareit.item;
 
-import org.springframework.stereotype.Component;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.model.ItemEntity;
+import ru.practicum.shareit.item.model.Item;
 
-@Component
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ItemMapper {
 
-    public ItemDto mapToItemDto(ItemEntity itemEntity) {
+    public static ItemDto mapToItemDto(Item item) {
         return ItemDto.builder()
-                .id(itemEntity.getId())
-                .name(itemEntity.getName())
-                .description(itemEntity.getDescription())
-                .isAvailable(itemEntity.isAvailable())
-                .ownerId(itemEntity.getOwnerId())
+                .id(item.getId())
+                .name(item.getName())
+                .description(item.getDescription())
+                .available(item.getAvailable())
                 .build();
     }
 
-    public ItemEntity mapToItemEntity(ItemDto itemDto) {
-        return ItemEntity.builder()
+    public static Item mapToItemEntity(ItemDto itemDto) {
+        return Item.builder()
                 .id(itemDto.getId())
                 .name(itemDto.getName())
                 .description(itemDto.getDescription())
-                .isAvailable(itemDto.isAvailable())
-                .ownerId(itemDto.getOwnerId())
+                .available(itemDto.getAvailable())
                 .build();
     }
 }

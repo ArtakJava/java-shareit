@@ -1,22 +1,23 @@
 package ru.practicum.shareit.user;
 
-import org.springframework.stereotype.Component;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import ru.practicum.shareit.user.dto.UserDto;
-import ru.practicum.shareit.user.model.UserEntity;
+import ru.practicum.shareit.user.model.User;
 
-@Component
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class UserMapper {
 
-    public UserDto mapToUserDto(UserEntity userEntity) {
+    public static UserDto mapToUserDto(User user) {
         return UserDto.builder()
-                .id(userEntity.getId())
-                .name(userEntity.getName())
-                .email(userEntity.getEmail())
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
                 .build();
     }
 
-    public UserEntity mapToUserEntity(UserDto userDto) {
-        return UserEntity.builder()
+    public static User mapToUserEntity(UserDto userDto) {
+        return User.builder()
                 .id(userDto.getId())
                 .name(userDto.getName())
                 .email(userDto.getEmail())

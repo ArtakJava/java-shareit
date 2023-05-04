@@ -1,6 +1,5 @@
 package ru.practicum.shareit.user;
 
-import ru.practicum.shareit.CustomJsonPatch;
 import ru.practicum.shareit.user.dto.UserDto;
 
 import java.util.List;
@@ -13,9 +12,7 @@ public interface UserService {
 
     List<UserDto> getAll();
 
-    UserDto update(long userId, CustomJsonPatch userDtoPatched);
+    UserDto update(long userId, UserDto userDto) throws NoSuchFieldException, IllegalAccessException;
 
     void delete(long userId);
-
-    UserDto applyPatchToUser(CustomJsonPatch patch, UserDto oldUserDto);
 }

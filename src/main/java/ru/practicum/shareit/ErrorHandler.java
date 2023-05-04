@@ -15,9 +15,9 @@ import ru.practicum.shareit.exception.NotValidOwnerException;
 public class ErrorHandler {
 
     @ExceptionHandler
-    @ResponseStatus(HttpStatus.CONFLICT)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse handleNotFoundData(final NotFoundException e) {
-        log.info("409 {}", e.getMessage());
+        log.info("404 {}", e.getMessage());
         return new ErrorResponse(e.getMessage());
     }
 
