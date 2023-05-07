@@ -37,7 +37,7 @@ public class ItemController {
     @PatchMapping("/{itemId}")
     public ItemDto update(@RequestHeader("X-Sharer-User-Id") long userId,
                           @PathVariable long itemId,
-                          @RequestBody ItemDto itemDtoPatch) throws NoSuchFieldException, IllegalAccessException {
+                          @RequestBody ItemDto itemDtoPatch) {
         log.info(InfoMessage.GET_UPDATE_REQUEST, itemDtoPatch);
         return service.update(userId, itemId, itemDtoPatch);
     }

@@ -35,7 +35,7 @@ public class UserController {
     }
 
     @PatchMapping("/{userId}")
-    public UserDto update(@PathVariable long userId, @RequestBody UserDto userDto) throws NoSuchFieldException, IllegalAccessException {
+    public UserDto update(@PathVariable long userId, @RequestBody UserDto userDto) {
         log.info(InfoMessage.GET_UPDATE_REQUEST, userDto);
         return service.update(userId, userDto);
     }

@@ -26,9 +26,9 @@ public class UserRepositoryImpl extends AbstractDataRepository<User> implements 
     }
 
     @Override
-    public User update(User user, User userPatch, Class<User> tClass) throws NoSuchFieldException, IllegalAccessException {
+    public User update(User user, User userPatch) {
         emails.remove(user.getEmail());
-        User result = super.update(user, userPatch, tClass);
+        User result = super.update(user, userPatch);
         emails.add(user.getEmail());
         return result;
     }
@@ -45,5 +45,16 @@ public class UserRepositoryImpl extends AbstractDataRepository<User> implements 
         if (emailAlreadyExist) {
             throw new AlreadyExistException(String.format(ErrorMessage.EMAIL_ALREADY_EXIST, user.getEmail()));
         }
+    }
+
+    @Override
+    public User getUpdatedEntity(User dataEntity, User dataPatch) {
+        if (dataPatch.getName() != null) {
+            dataEntity.setName(dataPatch.getName());
+        }
+        if (dataPatch.getEmail() != null) {
+            dataEntity.setEmail(dataPatch.getEmail());
+        }
+        return dataEntity;
     }
 }

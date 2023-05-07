@@ -12,7 +12,7 @@ public interface UserService {
 
     List<UserDto> getAll();
 
-    UserDto update(long userId, UserDto userDto) throws NoSuchFieldException, IllegalAccessException;
+    UserDto update(long userId, UserDto userDto);
 
     void delete(long userId);
 }

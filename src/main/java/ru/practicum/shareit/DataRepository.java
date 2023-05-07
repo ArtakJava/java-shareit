@@ -10,7 +10,7 @@ public interface DataRepository<T extends DataEntity> {
 
     List<T> getAll();
 
-    T update(T dataEntity, T dataPatch, Class<T> tClass) throws NoSuchFieldException, IllegalAccessException;
+    T update(T dataEntity, T dataPatch);
 
     void delete(long dataId);
 
@@ -20,5 +20,5 @@ public interface DataRepository<T extends DataEntity> {
 
     void validation(T dataEntity);
 
-    T getUpdatedEntity(T dataEntity, T userPatch, Class<T> tClass) throws NoSuchFieldException, IllegalAccessException;
+    T getUpdatedEntity(T dataEntity, T dataPatch);
 }

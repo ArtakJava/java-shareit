@@ -12,7 +12,7 @@ public interface ItemService {
 
     List<ItemDto> getAllByUser(long userId);
 
-    ItemDto update(long userId, long itemId, ItemDto itemDtoPatch) throws NoSuchFieldException, IllegalAccessException;
+    ItemDto update(long userId, long itemId, ItemDto itemDtoPatch);
 
     void delete(long userId, long itemId);
 

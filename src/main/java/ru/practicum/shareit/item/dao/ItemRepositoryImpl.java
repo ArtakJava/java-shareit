@@ -42,7 +42,8 @@ public class ItemRepositoryImpl extends AbstractDataRepository<Item> implements 
         if (!text.isBlank()) {
             items = getAll().stream()
                     .filter(itemEntity -> itemEntity.getAvailable()
-                            && itemEntity.getDescription().toLowerCase().contains(text.toLowerCase()))
+                            && (itemEntity.getDescription().toLowerCase().contains(text.toLowerCase())
+                            || itemEntity.getName().toLowerCase().contains(text.toLowerCase())))
                     .collect(Collectors.toList());
         }
         return items;
@@ -57,5 +58,19 @@ public class ItemRepositoryImpl extends AbstractDataRepository<Item> implements 
                         String.format(ErrorMessage.OWNER_ID_NOT_FOUND, dataEntity.getOwner().getId(), dataEntity.getId()));
             }
         }
+    }
+
+    @Override
+    public Item getUpdatedEntity(Item dataEntity, Item dataPatch) {
+        if (dataPatch.getName() != null) {
+            dataEntity.setName(dataPatch.getName());
+        }
+        if (dataPatch.getDescription() != null) {
+            dataEntity.setDescription(dataPatch.getDescription());
+        }
+        if (dataPatch.getAvailable() != null) {
+            dataEntity.setAvailable(dataPatch.getAvailable());
+        }
+        return dataEntity;
     }
 }

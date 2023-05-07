@@ -47,10 +47,10 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ItemDto update(long userId, long itemId, ItemDto itemDtoPatch) throws NoSuchFieldException, IllegalAccessException {
+    public ItemDto update(long userId, long itemId, ItemDto itemDtoPatch) {
         Item oldItem = repository.get(itemId);
         if (oldItem.getOwner().getId() == userId) {
-            Item result = repository.update(oldItem, ItemMapper.mapToItemEntity(itemDtoPatch), Item.class);
+            Item result = repository.update(oldItem, ItemMapper.mapToItemEntity(itemDtoPatch));
             log.info(InfoMessage.SUCCESS_UPDATE, ItemMapper.mapToItemDto(result));
             return ItemMapper.mapToItemDto(result);
         } else {

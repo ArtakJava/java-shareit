@@ -42,9 +42,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserDto update(long userId, UserDto userDtoPatch) throws NoSuchFieldException, IllegalAccessException {
+    public UserDto update(long userId, UserDto userDtoPatch) {
         User oldUser = repository.get(userId);
-        User result = repository.update(oldUser, UserMapper.mapToUserEntity(userDtoPatch), User.class);
+        User result = repository.update(oldUser, UserMapper.mapToUserEntity(userDtoPatch));
         UserDto resultDto = UserMapper.mapToUserDto(result);
         log.info(InfoMessage.SUCCESS_UPDATE, resultDto);
         return resultDto;
