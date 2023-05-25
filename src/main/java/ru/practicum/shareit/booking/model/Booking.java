@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.practicum.shareit.booking.BookingApproveState;
+import ru.practicum.shareit.booking.BookingState;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.model.User;
 
@@ -33,5 +33,5 @@ public class Booking {
     private User booker;
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
-    private BookingApproveState state = BookingApproveState.WAITING;
+    private BookingState state = BookingState.WAITING;
 }

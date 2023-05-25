@@ -17,7 +17,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ItemDtoWithBooking implements ItemDto {
+public class ItemDtoWithBooking {
     private long id;
     @NotBlank(message = ErrorMessage.ITEM_EMPTY_NAME)
     private String name;

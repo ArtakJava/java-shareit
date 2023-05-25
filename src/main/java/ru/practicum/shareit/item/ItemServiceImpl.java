@@ -15,7 +15,6 @@ import ru.practicum.shareit.comment.model.Comment;
 import ru.practicum.shareit.exception.NotValidOwnerForUpdateException;
 import ru.practicum.shareit.exception.UnBookingCommentException;
 import ru.practicum.shareit.item.dao.ItemRepository;
-import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
 import ru.practicum.shareit.item.dto.ItemDtoWithOutBooking;
 import ru.practicum.shareit.item.model.Item;
@@ -41,12 +40,12 @@ public class ItemServiceImpl implements ItemService {
     private final CommentRepository commentRepository;
 
     @Override
-    public ItemDto create(long userId, ItemDtoWithOutBooking itemDto) {
+    public ItemDtoWithBooking create(long userId, ItemDtoWithOutBooking itemDto) {
         Item item = ItemMapper.mapToItemEntity(itemDto);
         User user = userRepository.getReferenceById(userId);
         if (user.getName() != null) {
             item.setUser(user);
-            ItemDto result = ItemMapper.mapToItemDto(itemRepository.save(item));
+            ItemDtoWithBooking result = ItemMapper.mapToItemDto(itemRepository.save(item));
             log.info(InfoMessage.SUCCESS_CREATE, result);
             return result;
         } else {
@@ -55,9 +54,9 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ItemDto get(long userId, long itemId) {
+    public ItemDtoWithBooking get(long userId, long itemId) {
         Item item = itemRepository.getReferenceById(itemId);
-        ItemDto itemDto;
+        ItemDtoWithBooking itemDto;
         BookingDtoWithBooker lastBooking = null;
         BookingDtoWithBooker nextBooking = null;
         List<CommentDto> comments;
@@ -86,10 +85,17 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<ItemDto> getAllByUser(long userId) {
+    public List<ItemDtoWithBooking> getAllByUser(long userId) {
         List<ItemDtoWithBooking> itemsByUser = itemRepository.findAllByUserOrderById(userRepository.getReferenceById(userId)).stream()
                 .map(ItemMapper::mapToItemDto)
                 .collect(Collectors.toList());
+
+        List<Comment> allComments = commentRepository.findByItemIdIn(
+                itemsByUser.stream()
+                        .map(ItemDtoWithBooking::getId)
+                        .collect(Collectors.toSet()));
+        Map<Long, List<Comment>> commentsByItem = allComments.stream()
+                .collect(Collectors.groupingBy(comment -> comment.getItem().getId()));
         List<BookingDtoWithBookerAndItem> nextBookingDtoWithBookers = bookingRepository.findNextBookingForItemsByUser(userId, LocalDateTime.now());
         log.info(InfoMessage.SUCCESS_GET_ALL_ITEMS_BY_USER, userId);
         Map<Long, BookingDtoWithBooker> nextBookingByItem = nextBookingDtoWithBookers.stream()
@@ -103,17 +109,20 @@ public class ItemServiceImpl implements ItemService {
                         BookingDtoWithBookerAndItem::getItemId,
                         dto -> new BookingDtoWithBooker(dto.getId(), dto.getBookerId()), (first, second) -> second));
         return itemsByUser.stream()
-                .map(itemDto -> ItemMapper.mapToItemDtoWithBookings(
+                .map(itemDto -> ItemMapper.mapToItemDtoWithBookingsAndComments(
                         itemDto,
-                        lastBookingByItem.get(itemDto.getId()),
-                        nextBookingByItem.get(itemDto.getId())
+                        lastBookingByItem.getOrDefault(itemDto.getId(), null),
+                        nextBookingByItem.getOrDefault(itemDto.getId(), null),
+                        commentsByItem.getOrDefault(itemDto.getId(), new ArrayList<>()).stream()
+                                .map(CommentMapper::mapToCommentDto)
+                                .collect(Collectors.toList())
                 ))
                 .collect(Collectors.toList());
     }
 
     @Transactional
     @Override
-    public ItemDto update(long userId, long itemId, ItemDtoWithOutBooking itemDtoPatch) {
+    public ItemDtoWithBooking update(long userId, long itemId, ItemDtoWithOutBooking itemDtoPatch) {
         Item oldItem = itemRepository.getReferenceById(itemId);
         if (oldItem.getUser().getId() == userId) {
             Item result = itemRepository.save(getUpdatedItem(oldItem, ItemMapper.mapToItemEntity(itemDtoPatch)));
@@ -135,8 +144,8 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<ItemDto> search(String text) {
-        List<ItemDto> items = new ArrayList<>();
+    public List<ItemDtoWithBooking> search(String text) {
+        List<ItemDtoWithBooking> items = new ArrayList<>();
         if (!text.isBlank()) {
             items = itemRepository
                     .findByNameContainingIgnoreCaseAndAvailableTrueOrDescriptionContainingIgnoreCaseAndAvailableTrue(text, text)

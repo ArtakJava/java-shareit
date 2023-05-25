@@ -2,7 +2,6 @@ package ru.practicum.shareit.comment;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.springframework.stereotype.Component;
 import ru.practicum.shareit.comment.dto.CommentDto;
 import ru.practicum.shareit.comment.model.Comment;
 import ru.practicum.shareit.item.model.Item;
@@ -11,7 +10,6 @@ import ru.practicum.shareit.user.model.User;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
-@Component
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CommentMapper implements Serializable {
 

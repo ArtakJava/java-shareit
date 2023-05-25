@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.practicum.shareit.booking.BookingApproveState;
+import ru.practicum.shareit.booking.BookingState;
 
 import java.time.LocalDateTime;
 
@@ -17,5 +17,5 @@ public class BookingDto {
     private LocalDateTime start;
     private LocalDateTime end;
     private long itemId;
-    private BookingApproveState status = BookingApproveState.WAITING;
+    private BookingState status = BookingState.WAITING;
 }

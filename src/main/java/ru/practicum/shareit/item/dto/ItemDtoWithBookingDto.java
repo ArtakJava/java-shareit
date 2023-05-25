@@ -10,7 +10,7 @@ import ru.practicum.shareit.booking.dto.BookingDtoWithBooker;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ItemDtoWithBookingDto implements ItemDto {
+public class ItemDtoWithBookingDto {
     private long itemId;
     private BookingDtoWithBooker booking;
 }

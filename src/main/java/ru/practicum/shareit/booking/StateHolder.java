@@ -15,13 +15,9 @@ public class StateHolder {
     private BookingState getState(String stateInStr) {
         BookingState state;
         try {
-            state = BookingApproveState.valueOf(stateInStr);
+            state = BookingState.valueOf(stateInStr);
         } catch (IllegalArgumentException e1) {
-            try {
-                state = BookingTempState.valueOf(stateInStr);
-            } catch (IllegalArgumentException e2) {
-                throw new UnSupportedStatusException(String.format(ErrorMessage.UNSUPPORTED_STATUS, stateInStr));
-            }
+            throw new UnSupportedStatusException(String.format(ErrorMessage.UNSUPPORTED_STATUS, stateInStr));
         }
         return state;
     }
