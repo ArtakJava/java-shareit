@@ -1,13 +1,16 @@
 package ru.practicum.shareit.item.dao;
 
-import ru.practicum.shareit.DataRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.user.model.User;
 
 import java.util.List;
 
-public interface ItemRepository extends DataRepository<Item> {
+public interface ItemRepository extends JpaRepository<Item, Long> {
 
-    List<Item> getAllByUser(long userId);
+    List<Item> findAllByUserOrderById(User user);
 
-    List<Item> search(String text);
+    List<Item> findByNameContainingIgnoreCaseAndAvailableTrueOrDescriptionContainingIgnoreCaseAndAvailableTrue(
+            String text, String text1
+    );
 }
