@@ -40,7 +40,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByOwnerIdAndStartAfterOrderByStartDesc(long ownerId, LocalDateTime now);
 
     @Query("select new ru.practicum.shareit.booking.dto.BookingDtoWithBooker(b.id, b.booker.id) " +
-            "from Booking as b where b.item.id = ?1 and b.state not like 'REJECTED' and b.end < ?2 order by b.start desc")
+            "from Booking as b where b.item.id = ?1 and b.state not like 'REJECTED' " +
+            "and b.start < ?2 order by b.start desc")
     List<BookingDtoWithBooker> findLastBookingForItem(long itemId, LocalDateTime now);
 
     @Query("select new ru.practicum.shareit.booking.dto.BookingDtoWithBooker(b.id, b.booker.id) " +
