@@ -13,7 +13,7 @@ import javax.validation.constraints.NotNull;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ItemDto {
+public class ItemDtoWithOutBooking {
     private long id;
     @NotBlank(message = ErrorMessage.ITEM_EMPTY_NAME)
     private String name;

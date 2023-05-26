@@ -20,21 +20,21 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto create(UserDto userDto) {
         User user = UserMapper.mapToUserEntity(userDto);
-        UserDto result = UserMapper.mapToUserDto(repository.create(user));
+        UserDto result = UserMapper.mapToUserDto(repository.save(user));
         log.info(InfoMessage.SUCCESS_CREATE, result);
         return result;
     }
 
     @Override
     public UserDto get(long userId) {
-        User user = repository.get(userId);
+        User user = repository.getReferenceById(userId);
         log.info(InfoMessage.SUCCESS_GET, userId);
         return UserMapper.mapToUserDto(user);
     }
 
     @Override
     public List<UserDto> getAll() {
-        List<UserDto> users = repository.getAll().stream()
+        List<UserDto> users = repository.findAll().stream()
                 .map(UserMapper::mapToUserDto)
                 .collect(Collectors.toList());
         log.info(InfoMessage.SUCCESS_GET_ALL);
@@ -43,8 +43,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto update(long userId, UserDto userDtoPatch) {
-        User oldUser = repository.get(userId);
-        User result = repository.update(oldUser, UserMapper.mapToUserEntity(userDtoPatch));
+        User oldUser = repository.getReferenceById(userId);
+        User result = repository.save(getUpdatedUser(oldUser, UserMapper.mapToUserEntity(userDtoPatch)));
         UserDto resultDto = UserMapper.mapToUserDto(result);
         log.info(InfoMessage.SUCCESS_UPDATE, resultDto);
         return resultDto;
@@ -52,7 +52,18 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void delete(long userId) {
-        repository.delete(userId);
+        repository.delete(repository.getReferenceById(userId));
         log.info(InfoMessage.SUCCESS_DELETE, userId);
+    }
+
+    @Override
+    public User getUpdatedUser(User user, User userPatch) {
+        if (userPatch.getName() != null) {
+            user.setName(userPatch.getName());
+        }
+        if (userPatch.getEmail() != null) {
+            user.setEmail(userPatch.getEmail());
+        }
+        return user;
     }
 }
