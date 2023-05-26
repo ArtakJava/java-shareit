@@ -188,7 +188,7 @@ public class BookingServiceImpl implements BookingService {
         log.info(InfoMessage.SUCCESS_DELETE, userId);
     }
 
-    private boolean dateIsValid(BookingDto bookingDto) {
+    private void dateIsValid(BookingDto bookingDto) {
         LocalDateTime start = bookingDto.getStart();
         LocalDateTime end = bookingDto.getEnd();
         if (start == null) {
@@ -205,9 +205,7 @@ public class BookingServiceImpl implements BookingService {
         }
         if (end.isBefore(start)) {
             throw new NotValidDateException(ErrorMessage.END_BEFORE_START);
-        } else if (start.isBefore(end)) {
-            return true;
-        } else {
+        } else if (!start.isBefore(end)) {
             throw new NotValidDateException(ErrorMessage.START_EQUAL_END);
         }
     }
