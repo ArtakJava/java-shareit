@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingDtoWithInfo;
-import ru.practicum.shareit.exception.UnSupportedStatusException;
 import ru.practicum.shareit.messageManager.InfoMessage;
 
 import javax.validation.Valid;
@@ -32,18 +31,20 @@ public class BookingController {
 
     @GetMapping
     public List<BookingDtoWithInfo> getAllByBooker(@RequestHeader("X-Sharer-User-Id") long userId,
-                                          @RequestParam(defaultValue = "ALL")
-                                          String state) {
+                                                   @RequestParam(defaultValue = "ALL") String state,
+                                                   @RequestParam(required = false) Integer from,
+                                                   @RequestParam(required = false) Integer size) {
         log.info(InfoMessage.GET_ALL_REQUEST);
-        return service.getAllByBooker(userId, new StateHolder(state));
+        return service.getAllByBooker(userId, new Filter(new StateHolder(state), new PageParameter(from, size)));
     }
 
     @GetMapping("/owner")
     public List<BookingDtoWithInfo> getAllByOwner(@RequestHeader("X-Sharer-User-Id") long userId,
-                                           @RequestParam(defaultValue = "ALL")
-                                           String state) throws UnSupportedStatusException {
+                                                  @RequestParam(defaultValue = "ALL") String state,
+                                                  @RequestParam(required = false) Integer from,
+                                                  @RequestParam(required = false) Integer size) {
         log.info(InfoMessage.GET_ALL_REQUEST);
-        return service.getAllByOwner(userId, new StateHolder(state));
+        return service.getAllByOwner(userId, new Filter(new StateHolder(state), new PageParameter(from, size)));
     }
 
     @PatchMapping("/{bookingId}")

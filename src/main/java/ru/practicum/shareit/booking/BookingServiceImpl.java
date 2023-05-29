@@ -2,6 +2,8 @@ package ru.practicum.shareit.booking;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.dao.BookingRepository;
 import ru.practicum.shareit.booking.dto.BookingDto;
@@ -65,7 +67,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingDtoWithInfo> getAllByBooker(long bookerId, StateHolder stateHolder) {
+    public List<BookingDtoWithInfo> getAllByBooker(long bookerId, Filter filter) {
         Set<BookingState> states = new HashSet<>();
         User user = userRepository.getReferenceById(bookerId);
         if (user.getName() == null) {
@@ -73,17 +75,37 @@ public class BookingServiceImpl implements BookingService {
         }
         List<Booking> bookings = new ArrayList<>();
         List<BookingDtoWithInfo> result;
-        BookingState bookingState = stateHolder.getState();
+        BookingState bookingState = filter.getStateHolder().getState();
         switch (bookingState) {
             case ALL:
                 states.addAll(List.of(BookingState.values()));
-                bookings = bookingRepository.findByBookerIdAndStateIn(bookerId, states);
+                if (filter.getPageParameter().isPresent()) {
+                    bookings = bookingRepository.findByBookerIdAndStateIn(
+                            bookerId,
+                            states,
+                            PageRequest.of(
+                                    filter.getPageParameter().getPage(),
+                                    filter.getPageParameter().getSize(),
+                                    Sort.by("start").descending()
+                            )
+                    );
+                } else {
+                    bookings = bookingRepository.findByBookerIdAndStateIn(
+                            bookerId,
+                            states,
+                            Sort.by("start").descending()
+                    );
+                }
                 break;
             case APPROVED:
             case REJECTED:
             case WAITING:
                 states.add(bookingState);
-                bookings = bookingRepository.findByBookerIdAndStateIn(bookerId, states);
+                bookings = bookingRepository.findByBookerIdAndStateIn(
+                        bookerId,
+                        states,
+                        Sort.by("start").descending()
+                );
                 break;
             case PAST:
                 bookings = bookingRepository.findByBookerIdAndEndBeforeOrderByStartDesc(
@@ -112,7 +134,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingDtoWithInfo> getAllByOwner(long ownerId, StateHolder stateHolder) {
+    public List<BookingDtoWithInfo> getAllByOwner(long ownerId, Filter filter) {
         Set<BookingState> states = new HashSet<>();
         User user = userRepository.getReferenceById(ownerId);
         if (user.getName() == null) {
@@ -120,34 +142,58 @@ public class BookingServiceImpl implements BookingService {
         }
         List<Booking> bookings = new ArrayList<>();
         List<BookingDtoWithInfo> result;
-        BookingState bookingState = stateHolder.getState();
+        BookingState bookingState = filter.getStateHolder().getState();
         switch (bookingState) {
             case ALL:
                 states.addAll(List.of(BookingState.values()));
-                bookings = bookingRepository.findByOwnerIdAndStateIn(ownerId, states);
+                if (filter.getPageParameter().isPresent()) {
+                    bookings = bookingRepository.findByItemUserIdAndStateIn(
+                            ownerId,
+                            states,
+                            PageRequest.of(
+                                    filter.getPageParameter().getPage(),
+                                    filter.getPageParameter().getSize(),
+                                    Sort.by("start").descending()
+                            )
+                    );
+                } else {
+                    bookings = bookingRepository.findByItemUserIdAndStateIn(
+                            ownerId,
+                            states,
+                            Sort.by("start").descending()
+                    );
+                }
                 break;
             case APPROVED:
             case REJECTED:
             case WAITING:
                 states.add(bookingState);
-                bookings = bookingRepository.findByOwnerIdAndStateIn(ownerId, states);
+                bookings = bookingRepository.findByItemUserIdAndStateIn(
+                        ownerId,
+                        states,
+                        Sort.by("start").descending()
+                );
                 break;
             case PAST:
-                bookings = bookingRepository.findByOwnerIdAndEndBeforeOrderByStartDesc(
+                bookings = bookingRepository.findByItemUserIdAndEndBeforeOrderByStartDesc(
                         ownerId,
-                        LocalDateTime.now()
+                        LocalDateTime.now(),
+                        Sort.by("start").descending()
                 );
                 break;
             case CURRENT:
-                bookings = bookingRepository.findByOwnerIdAndStartBeforeAndEndAfterOrderByStartDesc(
+                bookings = bookingRepository.findByItemUserIdAndStartBeforeAndEndAfterOrderByStartDesc(
                         ownerId,
-                        LocalDateTime.now()
+                        LocalDateTime.now(),
+                        LocalDateTime.now(),
+                        Sort.by("start").descending()
                 );
                 break;
             case FUTURE:
-                bookings = bookingRepository.findByOwnerIdAndStartAfterOrderByStartDesc(
+                bookings = bookingRepository.findByItemUserIdAndStartAfterOrderByStartDesc(
                         ownerId,
-                        LocalDateTime.now()
+                        LocalDateTime.now(),
+                        Sort.by("start").descending()
                 );
                 break;
             default:

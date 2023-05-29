@@ -21,4 +21,5 @@ public class ItemDtoWithOutBooking {
     private String description;
     @NotNull
     private Boolean available;
+    private Long requestId;
 }

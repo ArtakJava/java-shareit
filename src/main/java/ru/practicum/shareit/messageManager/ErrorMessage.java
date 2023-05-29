@@ -22,4 +22,5 @@ public class ErrorMessage {
     public static final String BOOKER_OR_OWNER_ID_NOT_VALID = "Пользователь %s не является владельцем или арендатором для вещи с ID = %s.";
     public static final String BOOKING_ALREADY_APPROVED = "Бронирование с ID = %s уже одобрено.";
     public static final String AUTHOR_NOT_BOOKING = "Автор c ID = %s не закончил бронирование вещи с ID = %s для оставления комментария.";
+    public static final String NOT_VALID_PARAMETER = "Параметр %s для пагинации указан неверно.";
 }

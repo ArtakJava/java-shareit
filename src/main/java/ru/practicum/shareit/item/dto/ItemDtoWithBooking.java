@@ -27,5 +27,6 @@ public class ItemDtoWithBooking {
     private Boolean available;
     private BookingDtoWithBooker lastBooking;
     private BookingDtoWithBooker nextBooking;
+    private Long requestId;
     private List<CommentDto> comments = new ArrayList<>();
 }

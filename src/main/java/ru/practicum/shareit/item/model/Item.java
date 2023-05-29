@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import ru.practicum.shareit.messageManager.ErrorMessage;
+import ru.practicum.shareit.request.model.Request;
 import ru.practicum.shareit.user.model.User;
 
 import javax.persistence.*;
@@ -32,6 +33,9 @@ public class Item {
     public String description;
     @NotNull
     public Boolean available;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "request_id")
+    private Request request;
 
     public Item(long id, String name, String description, Boolean available) {
         this.id = id;

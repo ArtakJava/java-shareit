@@ -2,8 +2,11 @@ package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.booking.BookingMapper;
+import ru.practicum.shareit.booking.BookingState;
 import ru.practicum.shareit.booking.dao.BookingRepository;
 import ru.practicum.shareit.booking.dto.BookingDtoWithBooker;
 import ru.practicum.shareit.booking.dto.BookingDtoWithBookerAndItem;
@@ -20,6 +23,7 @@ import ru.practicum.shareit.item.dto.ItemDtoWithOutBooking;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.messageManager.ErrorMessage;
 import ru.practicum.shareit.messageManager.InfoMessage;
+import ru.practicum.shareit.request.dao.RequestRepository;
 import ru.practicum.shareit.user.dao.UserRepository;
 import ru.practicum.shareit.user.model.User;
 
@@ -38,6 +42,7 @@ public class ItemServiceImpl implements ItemService {
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
     private final CommentRepository commentRepository;
+    private final RequestRepository requestRepository;
 
     @Override
     public ItemDtoWithBooking create(long userId, ItemDtoWithOutBooking itemDto) {
@@ -45,6 +50,10 @@ public class ItemServiceImpl implements ItemService {
         User user = userRepository.getReferenceById(userId);
         if (user.getName() != null) {
             item.setUser(user);
+            Long requestId = itemDto.getRequestId();
+            if (requestId != null) {
+                item.setRequest(requestRepository.getReferenceById(itemDto.getRequestId()));
+            }
             ItemDtoWithBooking result = ItemMapper.mapToItemDto(itemRepository.save(item));
             log.info(InfoMessage.SUCCESS_CREATE, result);
             return result;
@@ -61,13 +70,21 @@ public class ItemServiceImpl implements ItemService {
         BookingDtoWithBooker nextBooking = null;
         List<CommentDto> comments;
         if (userId == item.getUser().getId()) {
-            List<BookingDtoWithBooker> lastBookings = bookingRepository.findLastBookingForItem(
-                    itemId,
-                    LocalDateTime.now()
+            List<BookingDtoWithBooker> lastBookings = BookingMapper.mapBooksToBookingsDtoWithBooker(
+                    bookingRepository.findByItemIdAndStateNotAndStartBefore(
+                            itemId,
+                            BookingState.REJECTED,
+                            LocalDateTime.now(),
+                            Sort.by("start").descending()
+                    )
             );
-            List<BookingDtoWithBooker> nextBookings = bookingRepository.findNextBookingForItem(
-                    itemId,
-                    LocalDateTime.now()
+            List<BookingDtoWithBooker> nextBookings = BookingMapper.mapBooksToBookingsDtoWithBooker(
+                    bookingRepository.findByItemIdAndStateNotAndStartAfter(
+                            itemId,
+                            BookingState.REJECTED,
+                            LocalDateTime.now(),
+                            Sort.by("start").ascending()
+                    )
             );
             if (!lastBookings.isEmpty()) {
                 lastBooking = lastBookings.get(0);
