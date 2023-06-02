@@ -14,7 +14,7 @@ import ru.practicum.shareit.exception.UnBookingCommentException;
 import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
 import ru.practicum.shareit.item.dto.ItemDtoWithOutBooking;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.messageManager.ErrorMessage;
+import ru.practicum.shareit.messageManager.MessageHolder;
 import ru.practicum.shareit.request.dto.RequestDto;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.model.User;
@@ -135,7 +135,7 @@ public class ItemServiceImplTest {
                 NotValidOwnerForUpdateException.class,
                 () -> service.update(otherUser.getId(), result.getId(), itemDtoPatch)
         );
-        assertEquals(String.format(ErrorMessage.USER_ID_NOT_VALID, otherUser.getId(), result.getId()), exception.getMessage());
+        assertEquals(String.format(MessageHolder.USER_ID_NOT_VALID, otherUser.getId(), result.getId()), exception.getMessage());
     }
 
     @Test
@@ -229,7 +229,7 @@ public class ItemServiceImplTest {
                 UnBookingCommentException.class,
                 () -> service.createComment(user.getId(), item.getId(), commentDto)
         );
-        assertEquals(String.format(ErrorMessage.AUTHOR_NOT_BOOKING, user.getId(), item.getId()), exception.getMessage());
+        assertEquals(String.format(new MessageHolder().AUTHOR_NOT_BOOKING, user.getId(), item.getId()), exception.getMessage());
     }
 
     private User makeUserEntity(String name, String email) {

@@ -12,8 +12,7 @@ import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.exception.*;
 import ru.practicum.shareit.item.dao.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.messageManager.ErrorMessage;
-import ru.practicum.shareit.messageManager.InfoMessage;
+import ru.practicum.shareit.messageManager.MessageHolder;
 import ru.practicum.shareit.user.dao.UserRepository;
 import ru.practicum.shareit.user.model.User;
 
@@ -41,14 +40,14 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = BookingMapper.mapToBookingEntity(bookingDto, item, booker);
         if (booker.getId() != booking.getItem().getUser().getId() && item.getAvailable()) {
             result = BookingMapper.mapToBookingInfo(bookingRepository.save(booking));
-            log.info(InfoMessage.SUCCESS_CREATE, result);
+            log.info(MessageHolder.SUCCESS_CREATE, result);
         } else if (booker.getId() != booking.getItem().getUser().getId() && !item.getAvailable()) {
             throw new NotAvailableItemException(
-                    String.format(ErrorMessage.AVAILABLE_NOT_AVAILABLE, item.getId())
+                    String.format(MessageHolder.AVAILABLE_NOT_AVAILABLE, item.getId())
             );
         } else {
             throw new NotFoundException(
-                    String.format(ErrorMessage.OWNER_ITEM, userId)
+                    String.format(MessageHolder.OWNER_ITEM, userId)
             );
         }
         return result;
@@ -59,11 +58,11 @@ public class BookingServiceImpl implements BookingService {
         User user = getUser(userId);
         Booking booking = bookingRepository.getReferenceById(bookingId);
         if (user.getId() == booking.getBooker().getId() || userId == booking.getItem().getUser().getId()) {
-            log.info(InfoMessage.SUCCESS_GET, userId);
+            log.info(MessageHolder.SUCCESS_GET, userId);
             return BookingMapper.mapToBookingInfo(booking);
         } else {
             throw new NotValidOwnerException(
-                    String.format(ErrorMessage.BOOKER_OR_OWNER_ID_NOT_VALID, userId, booking.getItem().getId())
+                    String.format(MessageHolder.BOOKER_OR_OWNER_ID_NOT_VALID, userId, booking.getItem().getId())
             );
         }
     }
@@ -213,15 +212,15 @@ public class BookingServiceImpl implements BookingService {
                     booking.setState(BookingState.REJECTED);
                 }
                 BookingDtoWithInfo result = BookingMapper.mapToBookingInfo(bookingRepository.save(booking));
-                log.info(InfoMessage.SUCCESS_CREATE, result);
+                log.info(MessageHolder.SUCCESS_CREATE, result);
                 return result;
             } else {
                 throw new NotValidOwnerException(
-                        String.format(ErrorMessage.USER_ID_NOT_VALID, userId, booking.getItem().getId())
+                        String.format(MessageHolder.USER_ID_NOT_VALID, userId, booking.getItem().getId())
                 );
             }
         } else {
-            throw new NotValidDataForUpdateException(String.format(ErrorMessage.BOOKING_ALREADY_APPROVED, bookingId));
+            throw new NotValidDataForUpdateException(String.format(MessageHolder.BOOKING_ALREADY_APPROVED, bookingId));
         }
     }
 
@@ -229,21 +228,21 @@ public class BookingServiceImpl implements BookingService {
         LocalDateTime start = bookingDto.getStart();
         LocalDateTime end = bookingDto.getEnd();
         if (start == null) {
-            throw new NotValidDateException(ErrorMessage.START_IS_NUll);
+            throw new NotValidDateException(MessageHolder.START_IS_NUll);
         }
         if (end == null) {
-            throw new NotValidDateException(ErrorMessage.END_IS_NUll);
+            throw new NotValidDateException(MessageHolder.END_IS_NUll);
         }
         if (start.isBefore(LocalDateTime.now())) {
-            throw new NotValidDateException(ErrorMessage.START_IN_PAST);
+            throw new NotValidDateException(MessageHolder.START_IN_PAST);
         }
         if (end.isBefore(LocalDateTime.now())) {
-            throw new NotValidDateException(ErrorMessage.END_IN_PAST);
+            throw new NotValidDateException(MessageHolder.END_IN_PAST);
         }
         if (end.isBefore(start)) {
-            throw new NotValidDateException(ErrorMessage.END_BEFORE_START);
+            throw new NotValidDateException(MessageHolder.END_BEFORE_START);
         } else if (!start.isBefore(end)) {
-            throw new NotValidDateException(ErrorMessage.START_EQUAL_END);
+            throw new NotValidDateException(MessageHolder.START_EQUAL_END);
         }
     }
 

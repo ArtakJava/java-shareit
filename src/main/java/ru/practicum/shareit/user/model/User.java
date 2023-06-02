@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.practicum.shareit.messageManager.ErrorMessage;
+import ru.practicum.shareit.messageManager.MessageHolder;
 
 import javax.persistence.*;
 import javax.validation.constraints.Email;
@@ -22,9 +22,9 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
-    @NotBlank(message = ErrorMessage.USER_EMPTY_NAME)
+    @NotBlank(message = MessageHolder.USER_EMPTY_NAME)
     private String name;
     @NotBlank
-    @Email(message = ErrorMessage.USER_EMAIL)
+    @Email(message = MessageHolder.USER_EMAIL)
     private String email;
 }

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.PageParameter;
 import ru.practicum.shareit.item.dao.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.messageManager.InfoMessage;
+import ru.practicum.shareit.messageManager.MessageHolder;
 import ru.practicum.shareit.request.dao.RequestRepository;
 import ru.practicum.shareit.request.dto.RequestDto;
 import ru.practicum.shareit.request.model.Request;
@@ -31,7 +31,7 @@ public class RequestServiceImpl implements RequestService {
     public RequestDto create(long userId, RequestDto requestDto) {
         Request request = RequestMapper.mapToRequestEntity(requestDto, getUser(userId));
         RequestDto result = RequestMapper.mapToRequestDto(requestRepository.save(request));
-        log.info(InfoMessage.SUCCESS_CREATE, result);
+        log.info(MessageHolder.SUCCESS_CREATE, result);
         return result;
     }
 
@@ -42,7 +42,7 @@ public class RequestServiceImpl implements RequestService {
                 .map(RequestMapper::mapToRequestDto)
                 .collect(Collectors.toList());
         Map<Long, List<Item>> itemsByRequest = findItemsByRequests(requests);
-        log.info(InfoMessage.SUCCESS_GET_ALL);
+        log.info(MessageHolder.SUCCESS_GET_ALL);
         return RequestMapper.mapRequestsDtoWithItems(requests, itemsByRequest);
     }
 
@@ -64,7 +64,7 @@ public class RequestServiceImpl implements RequestService {
                 .map(RequestMapper::mapToRequestDto)
                 .collect(Collectors.toList());
         Map<Long, List<Item>> itemsByRequest = findItemsByRequests(requestsDto);
-        log.info(InfoMessage.SUCCESS_GET_REQUESTS);
+        log.info(MessageHolder.SUCCESS_GET_REQUESTS);
         return RequestMapper.mapRequestsDtoWithItems(requestsDto, itemsByRequest);
     }
 
@@ -74,7 +74,7 @@ public class RequestServiceImpl implements RequestService {
         RequestDto requestWithOutItems = RequestMapper.mapToRequestDto(requestRepository.getReferenceById(requestId));
         List<Item> itemsByRequest = findItemsByRequest(requestWithOutItems);
         RequestDto request = RequestMapper.mapRequestDtoWithItems(requestWithOutItems, itemsByRequest);
-        log.info(String.format(InfoMessage.SUCCESS_GET), request);
+        log.info(String.format(MessageHolder.SUCCESS_GET), request);
         return request;
     }
 

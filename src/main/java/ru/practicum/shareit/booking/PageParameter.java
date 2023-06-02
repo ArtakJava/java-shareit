@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import ru.practicum.shareit.exception.NotValidParameterException;
-import ru.practicum.shareit.messageManager.ErrorMessage;
+import ru.practicum.shareit.messageManager.MessageHolder;
 
 @Setter
 @Getter
@@ -20,7 +20,7 @@ public class PageParameter {
     public Integer getPage() {
         if (from < 0 || size < 0) {
             throw new NotValidParameterException(
-                    String.format(ErrorMessage.NOT_VALID_PARAMETER, from < 0 ? from : size)
+                    String.format(MessageHolder.NOT_VALID_PARAMETER, from < 0 ? from : size)
             );
         }
         return from / size;

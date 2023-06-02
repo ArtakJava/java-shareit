@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingDtoWithInfo;
-import ru.practicum.shareit.messageManager.InfoMessage;
+import ru.practicum.shareit.messageManager.MessageHolder;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -19,13 +19,13 @@ public class BookingController {
 
     @PostMapping
     public BookingDtoWithInfo create(@RequestHeader("X-Sharer-User-Id") long userId, @Valid @RequestBody BookingDto bookingDto) {
-        log.info(InfoMessage.GET_CREATE_REQUEST, bookingDto);
+        log.info(MessageHolder.GET_CREATE_REQUEST, bookingDto);
         return service.create(userId, bookingDto);
     }
 
     @GetMapping("/{bookingId}")
     public BookingDtoWithInfo get(@RequestHeader("X-Sharer-User-Id") long userId, @PathVariable long bookingId) {
-        log.info(InfoMessage.GET_REQUEST, bookingId);
+        log.info(MessageHolder.GET_REQUEST, bookingId);
         return service.get(userId, bookingId);
     }
 
@@ -34,7 +34,7 @@ public class BookingController {
                                                    @RequestParam(defaultValue = "ALL") String state,
                                                    @RequestParam(required = false) Integer from,
                                                    @RequestParam(required = false) Integer size) {
-        log.info(InfoMessage.GET_ALL_REQUEST);
+        log.info(MessageHolder.GET_ALL_REQUEST);
         return service.getAllByBooker(userId, new Filter(new StateHolder(state), new PageParameter(from, size)));
     }
 
@@ -43,7 +43,7 @@ public class BookingController {
                                                   @RequestParam(defaultValue = "ALL") String state,
                                                   @RequestParam(required = false) Integer from,
                                                   @RequestParam(required = false) Integer size) {
-        log.info(InfoMessage.GET_ALL_REQUEST);
+        log.info(MessageHolder.GET_ALL_REQUEST);
         return service.getAllByOwner(userId, new Filter(new StateHolder(state), new PageParameter(from, size)));
     }
 
@@ -51,7 +51,7 @@ public class BookingController {
     public BookingDtoWithInfo approve(@RequestHeader("X-Sharer-User-Id") long userId,
                                       @PathVariable long bookingId,
                                       @RequestParam(name = "approved") boolean isApproved) {
-        log.info(InfoMessage.GET_UPDATE_REQUEST, bookingId);
+        log.info(MessageHolder.GET_UPDATE_REQUEST, bookingId);
         return service.approve(userId, bookingId, isApproved);
     }
 }

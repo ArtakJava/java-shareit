@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.practicum.shareit.messageManager.ErrorMessage;
+import ru.practicum.shareit.messageManager.MessageHolder;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -15,9 +15,9 @@ import javax.validation.constraints.NotNull;
 @AllArgsConstructor
 public class ItemDtoWithOutBooking {
     private long id;
-    @NotBlank(message = ErrorMessage.ITEM_EMPTY_NAME)
+    @NotBlank(message = MessageHolder.ITEM_EMPTY_NAME)
     private String name;
-    @NotBlank(message = ErrorMessage.ITEM_EMPTY_DESCRIPTION)
+    @NotBlank(message = MessageHolder.ITEM_EMPTY_DESCRIPTION)
     private String description;
     @NotNull
     private Boolean available;

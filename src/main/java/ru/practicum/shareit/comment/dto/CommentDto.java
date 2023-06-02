@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.practicum.shareit.messageManager.ErrorMessage;
+import ru.practicum.shareit.messageManager.MessageHolder;
 
 import javax.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class CommentDto {
     private long id;
-    @NotBlank(message = ErrorMessage.COMMENT_EMPTY_TEXT)
+    @NotBlank(message = MessageHolder.COMMENT_EMPTY_TEXT)
     private String text;
     private String authorName;
     private String created = LocalDateTime.now().toString();

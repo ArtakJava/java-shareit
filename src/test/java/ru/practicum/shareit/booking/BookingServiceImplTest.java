@@ -13,7 +13,7 @@ import ru.practicum.shareit.exception.*;
 import ru.practicum.shareit.item.ItemMapper;
 import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.messageManager.ErrorMessage;
+import ru.practicum.shareit.messageManager.MessageHolder;
 import ru.practicum.shareit.user.UserMapper;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.model.User;
@@ -97,7 +97,7 @@ public class BookingServiceImplTest {
                 () -> service.create(booker.getId(), bookingDto)
         );
         assertEquals(
-                String.format(ErrorMessage.AVAILABLE_NOT_AVAILABLE, bookingDto.getItemId()),
+                String.format(MessageHolder.AVAILABLE_NOT_AVAILABLE, bookingDto.getItemId()),
                 exception.getMessage()
         );
     }
@@ -110,7 +110,7 @@ public class BookingServiceImplTest {
                 () -> service.create(user.getId(), bookingDto)
         );
         assertEquals(
-                String.format(ErrorMessage.OWNER_ITEM, user.getId()),
+                String.format(MessageHolder.OWNER_ITEM, user.getId()),
                 exception.getMessage()
         );
     }
@@ -122,7 +122,7 @@ public class BookingServiceImplTest {
                 NotValidDateException.class,
                 () -> service.create(user.getId(), bookingDto)
         );
-        assertEquals(ErrorMessage.START_IS_NUll, exception.getMessage());
+        assertEquals(MessageHolder.START_IS_NUll, exception.getMessage());
     }
 
     @Test
@@ -132,7 +132,7 @@ public class BookingServiceImplTest {
                 NotValidDateException.class,
                 () -> service.create(user.getId(), bookingDto)
         );
-        assertEquals(ErrorMessage.END_IS_NUll, exception.getMessage());
+        assertEquals(MessageHolder.END_IS_NUll, exception.getMessage());
     }
 
     @Test
@@ -144,7 +144,7 @@ public class BookingServiceImplTest {
                 NotValidDateException.class,
                 () -> service.create(user.getId(), bookingDto)
         );
-        assertEquals(ErrorMessage.START_IN_PAST, exception.getMessage());
+        assertEquals(MessageHolder.START_IN_PAST, exception.getMessage());
     }
 
     @Test
@@ -156,7 +156,7 @@ public class BookingServiceImplTest {
                 NotValidDateException.class,
                 () -> service.create(user.getId(), bookingDto)
         );
-        assertEquals(ErrorMessage.END_IN_PAST, exception.getMessage());
+        assertEquals(MessageHolder.END_IN_PAST, exception.getMessage());
     }
 
     @Test
@@ -168,7 +168,7 @@ public class BookingServiceImplTest {
                 NotValidDateException.class,
                 () -> service.create(user.getId(), bookingDto)
         );
-        assertEquals(ErrorMessage.END_BEFORE_START, exception.getMessage());
+        assertEquals(MessageHolder.END_BEFORE_START, exception.getMessage());
     }
 
     @Test
@@ -180,7 +180,7 @@ public class BookingServiceImplTest {
                 NotValidDateException.class,
                 () -> service.create(user.getId(), bookingDto)
         );
-        assertEquals(ErrorMessage.START_EQUAL_END, exception.getMessage());
+        assertEquals(MessageHolder.START_EQUAL_END, exception.getMessage());
     }
 
     @Test
@@ -216,7 +216,7 @@ public class BookingServiceImplTest {
                 () -> service.get(otherUser.getId(), booking.getId())
         );
         assertEquals(
-                String.format(ErrorMessage.BOOKER_OR_OWNER_ID_NOT_VALID, otherUser.getId(), booking.getItem().getId()),
+                String.format(MessageHolder.BOOKER_OR_OWNER_ID_NOT_VALID, otherUser.getId(), booking.getItem().getId()),
                 exception.getMessage()
         );
     }
@@ -513,7 +513,7 @@ public class BookingServiceImplTest {
                 () -> service.getAllByOwner(user.getId(),
                         new Filter(new StateHolder("UNSUPPORTED_STATE"), new PageParameter(0, 3)))
         );
-        assertEquals(String.format(ErrorMessage.UNSUPPORTED_STATUS, "UNSUPPORTED_STATE"), exception.getMessage());
+        assertEquals(String.format(MessageHolder.UNSUPPORTED_STATUS, "UNSUPPORTED_STATE"), exception.getMessage());
     }
 
     @Test
@@ -535,7 +535,7 @@ public class BookingServiceImplTest {
                 () -> service.getAllByOwner(user.getId(),
                         new Filter(new StateHolder("ALL"), new PageParameter(-1, 3)))
         );
-        assertEquals(String.format(ErrorMessage.NOT_VALID_PARAMETER, -1), exception.getMessage());
+        assertEquals(String.format(MessageHolder.NOT_VALID_PARAMETER, -1), exception.getMessage());
     }
 
     @Test
@@ -659,7 +659,7 @@ public class BookingServiceImplTest {
                 NotValidDataForUpdateException.class,
                 () -> service.approve(user.getId(), booking.getId(), true)
         );
-        assertEquals(String.format(ErrorMessage.BOOKING_ALREADY_APPROVED, booking.getId()), exception.getMessage());
+        assertEquals(String.format(MessageHolder.BOOKING_ALREADY_APPROVED, booking.getId()), exception.getMessage());
     }
 
     @Test
@@ -670,7 +670,7 @@ public class BookingServiceImplTest {
                 NotValidOwnerException.class,
                 () -> service.approve(booker.getId(), booking.getId(), true)
         );
-        assertEquals(String.format(ErrorMessage.USER_ID_NOT_VALID, booker.getId(), booking.getItem().getId()),
+        assertEquals(String.format(MessageHolder.USER_ID_NOT_VALID, booker.getId(), booking.getItem().getId()),
                 exception.getMessage()
         );
     }

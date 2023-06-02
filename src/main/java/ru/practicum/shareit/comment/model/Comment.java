@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.messageManager.ErrorMessage;
+import ru.practicum.shareit.messageManager.MessageHolder;
 import ru.practicum.shareit.user.model.User;
 
 import javax.persistence.*;
@@ -24,7 +24,7 @@ public class Comment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
-    @NotBlank(message = ErrorMessage.COMMENT_EMPTY_TEXT)
+    @NotBlank(message = MessageHolder.COMMENT_EMPTY_TEXT)
     private String text;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "item_id")

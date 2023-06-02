@@ -3,7 +3,7 @@ package ru.practicum.shareit.user;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.shareit.messageManager.InfoMessage;
+import ru.practicum.shareit.messageManager.MessageHolder;
 import ru.practicum.shareit.user.dto.UserDto;
 
 import javax.validation.Valid;
@@ -18,31 +18,31 @@ public class UserController {
 
     @PostMapping
     public UserDto create(@Valid @RequestBody UserDto userDto) {
-        log.info(InfoMessage.GET_CREATE_REQUEST, userDto);
+        log.info(MessageHolder.GET_CREATE_REQUEST, userDto);
         return service.create(userDto);
     }
 
     @GetMapping("/{userId}")
     public UserDto get(@PathVariable long userId) {
-        log.info(InfoMessage.GET_REQUEST, userId);
+        log.info(MessageHolder.GET_REQUEST, userId);
         return service.get(userId);
     }
 
     @GetMapping
     public List<UserDto> getAll() {
-        log.info(InfoMessage.GET_ALL_REQUEST);
+        log.info(MessageHolder.GET_ALL_REQUEST);
         return service.getAll();
     }
 
     @PatchMapping("/{userId}")
     public UserDto update(@PathVariable long userId, @RequestBody UserDto userDto) {
-        log.info(InfoMessage.GET_UPDATE_REQUEST, userDto);
+        log.info(MessageHolder.GET_UPDATE_REQUEST, userDto);
         return service.update(userId, userDto);
     }
 
     @DeleteMapping("/{userId}")
     public void delete(@PathVariable long userId) {
-        log.info(InfoMessage.GET_UPDATE_REQUEST, userId);
+        log.info(MessageHolder.GET_UPDATE_REQUEST, userId);
         service.delete(userId);
     }
 }

@@ -21,8 +21,7 @@ import ru.practicum.shareit.item.dao.ItemRepository;
 import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
 import ru.practicum.shareit.item.dto.ItemDtoWithOutBooking;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.messageManager.ErrorMessage;
-import ru.practicum.shareit.messageManager.InfoMessage;
+import ru.practicum.shareit.messageManager.MessageHolder;
 import ru.practicum.shareit.request.dao.RequestRepository;
 import ru.practicum.shareit.user.dao.UserRepository;
 import ru.practicum.shareit.user.model.User;
@@ -53,7 +52,7 @@ public class ItemServiceImpl implements ItemService {
             item.setRequest(requestRepository.getReferenceById(itemDto.getRequestId()));
         }
         ItemDtoWithBooking result = ItemMapper.mapToItemDto(itemRepository.save(item));
-        log.info(InfoMessage.SUCCESS_CREATE, result);
+        log.info(MessageHolder.SUCCESS_CREATE, result);
         return result;
     }
 
@@ -93,7 +92,7 @@ public class ItemServiceImpl implements ItemService {
                 .map(CommentMapper::mapToCommentDto)
                 .collect(Collectors.toList());
         itemDto = ItemMapper.mapToItemDtoWithBookingsAndComments(item, lastBooking, nextBooking, comments);
-        log.info(InfoMessage.SUCCESS_GET, itemDto);
+        log.info(MessageHolder.SUCCESS_GET, itemDto);
         return itemDto;
     }
 
@@ -111,14 +110,14 @@ public class ItemServiceImpl implements ItemService {
                 .collect(Collectors.groupingBy(comment -> comment.getItem().getId()));
         List<BookingDtoWithBookerAndItem> nextBookingDtoWithBookers =
                 bookingRepository.findNextBookingForItemsByUser(userId, LocalDateTime.now());
-        log.info(InfoMessage.SUCCESS_GET_ALL_ITEMS_BY_USER, userId);
+        log.info(MessageHolder.SUCCESS_GET_ALL_ITEMS_BY_USER, userId);
         Map<Long, BookingDtoWithBooker> nextBookingByItem = nextBookingDtoWithBookers.stream()
                 .collect(Collectors.toMap(
                         BookingDtoWithBookerAndItem::getItemId,
                         dto -> new BookingDtoWithBooker(dto.getId(), dto.getBookerId()), (first, second) -> second));
         List<BookingDtoWithBookerAndItem> lastBookingDtoWithBookers =
                 bookingRepository.findLastBookingForItemsByUser(userId, LocalDateTime.now());
-        log.info(InfoMessage.SUCCESS_GET_ALL_ITEMS_BY_USER, userId);
+        log.info(MessageHolder.SUCCESS_GET_ALL_ITEMS_BY_USER, userId);
         Map<Long, BookingDtoWithBooker> lastBookingByItem = lastBookingDtoWithBookers.stream()
                 .collect(Collectors.toMap(
                         BookingDtoWithBookerAndItem::getItemId,
@@ -142,11 +141,11 @@ public class ItemServiceImpl implements ItemService {
         Item oldItem = itemRepository.getReferenceById(itemId);
         if (oldItem.getUser().getId() == user.getId()) {
             Item result = itemRepository.save(getUpdatedItem(oldItem, ItemMapper.mapToItemEntity(itemDtoPatch)));
-            log.info(InfoMessage.SUCCESS_UPDATE, ItemMapper.mapToItemDto(result));
+            log.info(MessageHolder.SUCCESS_UPDATE, ItemMapper.mapToItemDto(result));
             return ItemMapper.mapToItemDto(result);
         } else {
             throw new NotValidOwnerForUpdateException(
-                    String.format(ErrorMessage.USER_ID_NOT_VALID, userId, itemId));
+                    String.format(MessageHolder.USER_ID_NOT_VALID, userId, itemId));
         }
     }
 
@@ -156,7 +155,7 @@ public class ItemServiceImpl implements ItemService {
         User user = getUser(userId);
         if (itemRepository.getReferenceById(itemId).getUser().getId() == user.getId()) {
             itemRepository.delete(itemRepository.getReferenceById(itemId));
-            log.info(InfoMessage.SUCCESS_DELETE, itemId);
+            log.info(MessageHolder.SUCCESS_DELETE, itemId);
         }
     }
 
@@ -170,7 +169,7 @@ public class ItemServiceImpl implements ItemService {
                     .map(ItemMapper::mapToItemDto)
                     .collect(Collectors.toList());
         }
-        log.info(InfoMessage.SUCCESS_SEARCH_ITEMS, text);
+        log.info(MessageHolder.SUCCESS_SEARCH_ITEMS, text);
         return items;
     }
 
@@ -196,10 +195,10 @@ public class ItemServiceImpl implements ItemService {
             Item item = itemRepository.getReferenceById(itemId);
             Comment comment = CommentMapper.mapToCommentEntity(commentDto, user, item);
             CommentDto result = CommentMapper.mapToCommentDto(commentRepository.save(comment));
-            log.info(InfoMessage.GET_UPDATE_REQUEST, itemId);
+            log.info(MessageHolder.GET_UPDATE_REQUEST, itemId);
             return result;
         } else {
-            throw new UnBookingCommentException(String.format(ErrorMessage.AUTHOR_NOT_BOOKING, authorId, itemId));
+            throw new UnBookingCommentException(String.format(MessageHolder.AUTHOR_NOT_BOOKING, authorId, itemId));
         }
     }
 
