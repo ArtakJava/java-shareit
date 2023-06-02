@@ -6,10 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import ru.practicum.shareit.booking.dto.BookingDtoWithBooker;
 import ru.practicum.shareit.comment.dto.CommentDto;
-import ru.practicum.shareit.messageManager.ErrorMessage;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,11 +16,8 @@ import java.util.List;
 @AllArgsConstructor
 public class ItemDtoWithBooking {
     private long id;
-    @NotBlank(message = ErrorMessage.ITEM_EMPTY_NAME)
     private String name;
-    @NotBlank(message = ErrorMessage.ITEM_EMPTY_DESCRIPTION)
     private String description;
-    @NotNull
     private Boolean available;
     private BookingDtoWithBooker lastBooking;
     private BookingDtoWithBooker nextBooking;

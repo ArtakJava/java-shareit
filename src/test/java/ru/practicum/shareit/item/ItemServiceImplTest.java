@@ -3,21 +3,19 @@ package ru.practicum.shareit.item;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.orm.jpa.JpaObjectRetrievalFailureException;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.comment.dto.CommentDto;
-import ru.practicum.shareit.comment.model.Comment;
+import ru.practicum.shareit.exception.NotValidOwnerForUpdateException;
+import ru.practicum.shareit.exception.UnBookingCommentException;
 import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
 import ru.practicum.shareit.item.dto.ItemDtoWithOutBooking;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.request.dao.RequestRepository;
+import ru.practicum.shareit.messageManager.ErrorMessage;
 import ru.practicum.shareit.request.dto.RequestDto;
-import ru.practicum.shareit.request.model.Request;
-import ru.practicum.shareit.user.dao.UserRepository;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.model.User;
 
@@ -25,6 +23,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -41,19 +40,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class ItemServiceImplTest {
     private final ItemService service;
     private final EntityManager em;
-    @Mock
-    private final RequestRepository requestRepository;
-    @Mock
-    private final UserRepository userRepository;
-    private Request request;
-    private RequestDto requestDto;
     private User user;
-    private UserDto userDto;
+    private User otherUser;
     private Item item;
     private Item itemPatched;
     private ItemDtoWithOutBooking itemDto;
     private ItemDtoWithOutBooking itemDtoPatch;
-    private Comment comment;
     private LocalDateTime dateTime;
 
     @BeforeEach
@@ -61,14 +53,15 @@ public class ItemServiceImplTest {
         String str = "2023-06-05 11:30:40";
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         dateTime = LocalDateTime.parse(str, formatter);
-
         user = makeUserEntity("Ivan", "ivan@email");
         em.persist(user);
         em.flush();
-        userDto = makeUserDto("Ivan", "ivan@email");
-
+        otherUser = makeUserEntity("Dima", "dima@email");
+        em.persist(user);
+        em.flush();
+        RequestDto requestDto = makeRequestDto(1L, "Request N1", dateTime.toString(), new ArrayList<>());
         item = makeItemEntity("item N1", "description", true, user);
-        itemDto = makeItemDto("item N1", "description", true);
+        itemDto = makeItemDto("item N1", "description", true, requestDto.getId());
         itemDtoPatch = makeItemDtoPatch("item N1 update");
         itemPatched = makeItemEntity("item N1 update", "description", true, user);
     }
@@ -127,6 +120,22 @@ public class ItemServiceImplTest {
         assertThat(result.getName(), equalTo(itemPatched.getName()));
         assertThat(result.getDescription(), equalTo(itemPatched.getDescription()));
         assertThat(result.getAvailable(), equalTo(itemPatched.getAvailable()));
+    }
+
+    @Test
+    void testUpdateByOtherUser() {
+        ItemDtoWithBooking result = service.create(user.getId(), itemDto);
+        assertThat(result.getId(), notNullValue());
+        assertThat(result.getName(), equalTo(itemDto.getName()));
+        assertThat(result.getDescription(), equalTo(itemDto.getDescription()));
+        assertThat(result.getAvailable(), equalTo(itemDto.getAvailable()));
+        em.persist(otherUser);
+        em.flush();
+        final NotValidOwnerForUpdateException exception = assertThrows(
+                NotValidOwnerForUpdateException.class,
+                () -> service.update(otherUser.getId(), result.getId(), itemDtoPatch)
+        );
+        assertEquals(String.format(ErrorMessage.USER_ID_NOT_VALID, otherUser.getId(), result.getId()), exception.getMessage());
     }
 
     @Test
@@ -211,6 +220,18 @@ public class ItemServiceImplTest {
         assertThat(result.getCreated(), equalTo(commentDto.getCreated()));
     }
 
+    @Test
+    void testCreateCommentWithOutBooking() {
+        em.persist(item);
+        em.flush();
+        CommentDto commentDto = makeCommentDto("text comment 1", user.getName(), dateTime);
+        final UnBookingCommentException exception = assertThrows(
+                UnBookingCommentException.class,
+                () -> service.createComment(user.getId(), item.getId(), commentDto)
+        );
+        assertEquals(String.format(ErrorMessage.AUTHOR_NOT_BOOKING, user.getId(), item.getId()), exception.getMessage());
+    }
+
     private User makeUserEntity(String name, String email) {
         User user = new User();
         user.setName(name);
@@ -225,14 +246,6 @@ public class ItemServiceImplTest {
         return userDto;
     }
 
-    private Request makeRequestEntity(String description, LocalDateTime created, User requestor) {
-        Request request = new Request();
-        request.setDescription(description);
-        request.setCreated(created);
-        request.setRequestor(requestor);
-        return request;
-    }
-
     private Item makeItemEntity(String name, String description, Boolean available, User user) {
         Item item = new Item();
         item.setName(name);
@@ -242,11 +255,12 @@ public class ItemServiceImplTest {
         return item;
     }
 
-    private ItemDtoWithOutBooking makeItemDto(String name, String description, Boolean available) {
+    private ItemDtoWithOutBooking makeItemDto(String name, String description, Boolean available, long requestId) {
         ItemDtoWithOutBooking itemDto = new ItemDtoWithOutBooking();
         itemDto.setName(name);
         itemDto.setDescription(description);
         itemDto.setAvailable(available);
+        itemDto.setRequestId(requestId);
         return itemDto;
     }
 
@@ -276,5 +290,14 @@ public class ItemServiceImplTest {
         commentDto.setAuthorName(authorName);
         commentDto.setCreated(dateTimeOne.toString());
         return commentDto;
+    }
+
+    private RequestDto makeRequestDto(Long id, String description, String created, List<ItemDtoWithOutBooking> items) {
+        RequestDto requestDto = new RequestDto();
+        requestDto.setId(id);
+        requestDto.setDescription(description);
+        requestDto.setCreated(created);
+        requestDto.setItems(items);
+        return requestDto;
     }
 }

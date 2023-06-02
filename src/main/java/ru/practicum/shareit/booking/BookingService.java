@@ -2,6 +2,7 @@ package ru.practicum.shareit.booking;
 
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingDtoWithInfo;
+import ru.practicum.shareit.user.model.User;
 
 import java.util.List;
 
@@ -17,5 +18,5 @@ public interface BookingService {
 
     BookingDtoWithInfo approve(long userId, long bookingId, boolean isApproved);
 
-    void delete(long userId);
+    User getUser(long userId);
 }

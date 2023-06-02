@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.PageParameter;
 import ru.practicum.shareit.item.dao.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.messageManager.ErrorMessage;
 import ru.practicum.shareit.messageManager.InfoMessage;
 import ru.practicum.shareit.request.dao.RequestRepository;
 import ru.practicum.shareit.request.dto.RequestDto;
@@ -16,7 +15,6 @@ import ru.practicum.shareit.request.model.Request;
 import ru.practicum.shareit.user.dao.UserRepository;
 import ru.practicum.shareit.user.model.User;
 
-import javax.persistence.EntityNotFoundException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -80,13 +78,14 @@ public class RequestServiceImpl implements RequestService {
         return request;
     }
 
-    private User getUser(long userId) {
+    @Override
+    public User getUser(long userId) {
+        User result = new User();
         User user = userRepository.getReferenceById(userId);
         if (user.getName() != null) {
-            return user;
-        } else {
-            throw new EntityNotFoundException(String.format(ErrorMessage.USER_ID_NOT_FOUND, userId));
+            result = user;
         }
+        return result;
     }
 
     private Map<Long, List<Item>> findItemsByRequests(List<RequestDto> requests) {

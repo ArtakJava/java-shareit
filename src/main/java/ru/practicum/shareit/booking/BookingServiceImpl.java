@@ -35,14 +35,14 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public BookingDtoWithInfo create(long userId, BookingDto bookingDto) {
         dateIsValid(bookingDto);
+        BookingDtoWithInfo result;
         Item item = itemRepository.getReferenceById(bookingDto.getItemId());
-        User booker = userRepository.getReferenceById(userId);
+        User booker = getUser(userId);
         Booking booking = BookingMapper.mapToBookingEntity(bookingDto, item, booker);
-        if (userId != booking.getItem().getUser().getId() && booker.getName() != null && item.getAvailable()) {
-            BookingDtoWithInfo result = BookingMapper.mapToBookingInfo(bookingRepository.save(booking));
+        if (booker.getId() != booking.getItem().getUser().getId() && item.getAvailable()) {
+            result = BookingMapper.mapToBookingInfo(bookingRepository.save(booking));
             log.info(InfoMessage.SUCCESS_CREATE, result);
-            return result;
-        } else if (userId != booking.getItem().getUser().getId() && !item.getAvailable()) {
+        } else if (booker.getId() != booking.getItem().getUser().getId() && !item.getAvailable()) {
             throw new NotAvailableItemException(
                     String.format(ErrorMessage.AVAILABLE_NOT_AVAILABLE, item.getId())
             );
@@ -51,28 +51,27 @@ public class BookingServiceImpl implements BookingService {
                     String.format(ErrorMessage.OWNER_ITEM, userId)
             );
         }
+        return result;
     }
 
     @Override
     public BookingDtoWithInfo get(long userId, long bookingId) {
+        User user = getUser(userId);
         Booking booking = bookingRepository.getReferenceById(bookingId);
-        if (userId == booking.getBooker().getId() || userId == booking.getItem().getUser().getId()) {
+        if (user.getId() == booking.getBooker().getId() || userId == booking.getItem().getUser().getId()) {
             log.info(InfoMessage.SUCCESS_GET, userId);
             return BookingMapper.mapToBookingInfo(booking);
         } else {
             throw new NotValidOwnerException(
-                    String.format(ErrorMessage.BOOKER_OR_OWNER_ID_NOT_VALID, userId, bookingId)
+                    String.format(ErrorMessage.BOOKER_OR_OWNER_ID_NOT_VALID, userId, booking.getItem().getId())
             );
         }
     }
 
     @Override
     public List<BookingDtoWithInfo> getAllByBooker(long bookerId, Filter filter) {
+        User booker = getUser(bookerId);
         Set<BookingState> states = new HashSet<>();
-        User user = userRepository.getReferenceById(bookerId);
-        if (user.getName() == null) {
-            throw new NotFoundException(String.format(ErrorMessage.USER_ID_NOT_FOUND, bookerId));
-        }
         List<Booking> bookings = new ArrayList<>();
         List<BookingDtoWithInfo> result;
         BookingState bookingState = filter.getStateHolder().getState();
@@ -81,7 +80,7 @@ public class BookingServiceImpl implements BookingService {
                 states.addAll(List.of(BookingState.values()));
                 if (filter.getPageParameter().isPresent()) {
                     bookings = bookingRepository.findByBookerIdAndStateIn(
-                            bookerId,
+                            booker.getId(),
                             states,
                             PageRequest.of(
                                     filter.getPageParameter().getPage(),
@@ -91,7 +90,7 @@ public class BookingServiceImpl implements BookingService {
                     );
                 } else {
                     bookings = bookingRepository.findByBookerIdAndStateIn(
-                            bookerId,
+                            booker.getId(),
                             states,
                             Sort.by("start").descending()
                     );
@@ -102,27 +101,27 @@ public class BookingServiceImpl implements BookingService {
             case WAITING:
                 states.add(bookingState);
                 bookings = bookingRepository.findByBookerIdAndStateIn(
-                        bookerId,
+                        booker.getId(),
                         states,
                         Sort.by("start").descending()
                 );
                 break;
             case PAST:
                 bookings = bookingRepository.findByBookerIdAndEndBeforeOrderByStartDesc(
-                        bookerId,
+                        booker.getId(),
                         LocalDateTime.now()
                 );
                 break;
             case CURRENT:
                 bookings = bookingRepository.findByBookerIdAndStartBeforeAndEndAfterOrderByStartDesc(
-                        bookerId,
+                        booker.getId(),
                         LocalDateTime.now(),
                         LocalDateTime.now()
                 );
                 break;
             case FUTURE:
                 bookings = bookingRepository.findByBookerIdAndStartAfterOrderByStartDesc(
-                        bookerId,
+                        booker.getId(),
                         LocalDateTime.now()
                 );
                 break;
@@ -135,11 +134,8 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public List<BookingDtoWithInfo> getAllByOwner(long ownerId, Filter filter) {
+        User owner = getUser(ownerId);
         Set<BookingState> states = new HashSet<>();
-        User user = userRepository.getReferenceById(ownerId);
-        if (user.getName() == null) {
-            throw new NotFoundException(String.format(ErrorMessage.USER_ID_NOT_FOUND, ownerId));
-        }
         List<Booking> bookings = new ArrayList<>();
         List<BookingDtoWithInfo> result;
         BookingState bookingState = filter.getStateHolder().getState();
@@ -148,7 +144,7 @@ public class BookingServiceImpl implements BookingService {
                 states.addAll(List.of(BookingState.values()));
                 if (filter.getPageParameter().isPresent()) {
                     bookings = bookingRepository.findByItemUserIdAndStateIn(
-                            ownerId,
+                            owner.getId(),
                             states,
                             PageRequest.of(
                                     filter.getPageParameter().getPage(),
@@ -158,7 +154,7 @@ public class BookingServiceImpl implements BookingService {
                     );
                 } else {
                     bookings = bookingRepository.findByItemUserIdAndStateIn(
-                            ownerId,
+                            owner.getId(),
                             states,
                             Sort.by("start").descending()
                     );
@@ -169,21 +165,21 @@ public class BookingServiceImpl implements BookingService {
             case WAITING:
                 states.add(bookingState);
                 bookings = bookingRepository.findByItemUserIdAndStateIn(
-                        ownerId,
+                        owner.getId(),
                         states,
                         Sort.by("start").descending()
                 );
                 break;
             case PAST:
                 bookings = bookingRepository.findByItemUserIdAndEndBeforeOrderByStartDesc(
-                        ownerId,
+                        owner.getId(),
                         LocalDateTime.now(),
                         Sort.by("start").descending()
                 );
                 break;
             case CURRENT:
                 bookings = bookingRepository.findByItemUserIdAndStartBeforeAndEndAfterOrderByStartDesc(
-                        ownerId,
+                        owner.getId(),
                         LocalDateTime.now(),
                         LocalDateTime.now(),
                         Sort.by("start").descending()
@@ -191,7 +187,7 @@ public class BookingServiceImpl implements BookingService {
                 break;
             case FUTURE:
                 bookings = bookingRepository.findByItemUserIdAndStartAfterOrderByStartDesc(
-                        ownerId,
+                        owner.getId(),
                         LocalDateTime.now(),
                         Sort.by("start").descending()
                 );
@@ -207,9 +203,10 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingDtoWithInfo approve(long userId, long bookingId, boolean isApproved) {
+        User user = getUser(userId);
         Booking booking = bookingRepository.getReferenceById(bookingId);
         if (booking.getState().equals(BookingState.WAITING)) {
-            if (userId == booking.getItem().getUser().getId()) {
+            if (user.getId() == booking.getItem().getUser().getId()) {
                 if (isApproved) {
                     booking.setState(BookingState.APPROVED);
                 } else {
@@ -226,12 +223,6 @@ public class BookingServiceImpl implements BookingService {
         } else {
             throw new NotValidDataForUpdateException(String.format(ErrorMessage.BOOKING_ALREADY_APPROVED, bookingId));
         }
-    }
-
-    @Override
-    public void delete(long userId) {
-        bookingRepository.delete(bookingRepository.getReferenceById(userId));
-        log.info(InfoMessage.SUCCESS_DELETE, userId);
     }
 
     private void dateIsValid(BookingDto bookingDto) {
@@ -254,5 +245,15 @@ public class BookingServiceImpl implements BookingService {
         } else if (!start.isBefore(end)) {
             throw new NotValidDateException(ErrorMessage.START_EQUAL_END);
         }
+    }
+
+    @Override
+    public User getUser(long userId) {
+        User result = new User();
+        User user = userRepository.getReferenceById(userId);
+        if (user.getName() != null) {
+            result = user;
+        }
+        return result;
     }
 }

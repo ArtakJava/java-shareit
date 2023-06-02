@@ -29,13 +29,6 @@ public class ErrorHandler {
     }
 
     @ExceptionHandler
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public ErrorResponse handleAlreadyExistData(final AlreadyExistException e) {
-        log.info("409 {}", e.getMessage());
-        return new ErrorResponse(e.getMessage());
-    }
-
-    @ExceptionHandler
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse handleNotFoundUserForUpdateItem(final NotValidOwnerForUpdateException e) {
         log.info("404 {}", e.getMessage());

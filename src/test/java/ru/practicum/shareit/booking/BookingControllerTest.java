@@ -17,10 +17,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingDtoWithBooker;
 import ru.practicum.shareit.booking.dto.BookingDtoWithInfo;
-import ru.practicum.shareit.comment.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
-import ru.practicum.shareit.item.dto.ItemDtoWithOutBooking;
-import ru.practicum.shareit.request.dto.RequestDto;
 import ru.practicum.shareit.user.dto.UserDto;
 
 import java.nio.charset.StandardCharsets;
@@ -44,21 +41,12 @@ public class BookingControllerTest {
     private BookingController bookingController;
     private final ObjectMapper mapper = new ObjectMapper();
     private MockMvc mvc;
-    private ItemDtoWithOutBooking itemDtoOne;
-    private ItemDtoWithOutBooking itemDtoTwo;
-    private ItemDtoWithBooking itemDtoWithBookingOne;
-    private ItemDtoWithBooking itemDtoWithBookingTwo;
     private BookingDto bookingDtoOne;
-    private BookingDto bookingDtoTwo;
     private BookingDtoWithInfo bookingDtoWithInfo;
     private BookingDtoWithInfo bookingDtoWithInfoTwo;
-    private RequestDto requestDtoOne;
-    private RequestDto requestDtoTwo;
-    private CommentDto commentDto;
     private UserDto owner;
     private UserDto user;
     private UserDto requestor;
-    private DateTimeFormatter formatter;
 
     @Autowired
     BookingControllerTest(BookingService bookingService) {
@@ -83,29 +71,7 @@ public class BookingControllerTest {
                 3L,
                 "Anton",
                 "anton.bag@mail.com");
-        requestDtoOne = new RequestDto(
-                1L,
-                "request 1",
-                "2023-05-04 11:30:40",
-                new ArrayList<>());
-        requestDtoTwo = new RequestDto(
-                2L,
-                "request 2",
-                "2023-05-04 12:30:40",
-                new ArrayList<>());
-        itemDtoOne = new ItemDtoWithOutBooking(
-                1L,
-                "item 1",
-                "description 1",
-                true,
-                requestDtoOne.getId());
-        itemDtoTwo = new ItemDtoWithOutBooking(
-                2L,
-                "item 2",
-                "description 2",
-                true,
-                requestDtoTwo.getId());
-        itemDtoWithBookingOne = new ItemDtoWithBooking(
+        ItemDtoWithBooking itemDtoWithBookingOne = new ItemDtoWithBooking(
                 1L,
                 "item 1",
                 "description 1",
@@ -114,7 +80,7 @@ public class BookingControllerTest {
                 new BookingDtoWithBooker(2L, requestor.getId()),
                 requestor.getId(),
                 new ArrayList<>());
-        itemDtoWithBookingTwo = new ItemDtoWithBooking(
+        ItemDtoWithBooking itemDtoWithBookingTwo = new ItemDtoWithBooking(
                 2L,
                 "item 2",
                 "description 2",
@@ -123,10 +89,9 @@ public class BookingControllerTest {
                 new BookingDtoWithBooker(2L, requestor.getId()),
                 requestor.getId(),
                 new ArrayList<>());
-        commentDto = new CommentDto(1L, "text", requestor.getName(), "2023-05-04 12:30:40");
         String startInstr = "2023-06-05T11:30:40";
         String endInstr = "2023-06-05T11:50:40";
-        formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
         LocalDateTime start = LocalDateTime.parse(startInstr, formatter);
         LocalDateTime end = LocalDateTime.parse(endInstr, formatter);
         bookingDtoOne = new BookingDto(1L, start, end, itemDtoWithBookingOne.getId(), BookingState.WAITING);
@@ -135,7 +100,6 @@ public class BookingControllerTest {
         formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
         LocalDateTime startTwo = LocalDateTime.parse(startInstrTwo, formatter);
         LocalDateTime endTwo = LocalDateTime.parse(endInstrTwo, formatter);
-        bookingDtoTwo = new BookingDto(2L, startTwo, endTwo, itemDtoWithBookingTwo.getId(), BookingState.WAITING);
         bookingDtoWithInfo = new BookingDtoWithInfo(1L, start, end, itemDtoWithBookingOne, user, BookingState.WAITING);
         bookingDtoWithInfoTwo = new BookingDtoWithInfo(2L, startTwo, endTwo, itemDtoWithBookingTwo, requestor, BookingState.WAITING);
     }
@@ -336,14 +300,5 @@ public class BookingControllerTest {
                 .andExpect(jsonPath("$.booker.id", is(bookingDtoWithInfo.getBooker().getId()), Long.class))
                 .andExpect(jsonPath("$.booker.name", is(bookingDtoWithInfo.getBooker().getName())))
                 .andExpect(jsonPath("$.booker.email", is(bookingDtoWithInfo.getBooker().getEmail())));
-    }
-
-    @Test
-    void testDelete() throws Exception {
-        mvc.perform(delete("/bookings/" + bookingDtoWithInfo.getId())
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
     }
 }

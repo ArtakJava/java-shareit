@@ -9,12 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingDtoWithInfo;
 import ru.practicum.shareit.booking.model.Booking;
-import ru.practicum.shareit.comment.dto.CommentDto;
+import ru.practicum.shareit.exception.*;
 import ru.practicum.shareit.item.ItemMapper;
 import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
-import ru.practicum.shareit.item.dto.ItemDtoWithOutBooking;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.request.model.Request;
+import ru.practicum.shareit.messageManager.ErrorMessage;
 import ru.practicum.shareit.user.UserMapper;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.model.User;
@@ -27,6 +26,8 @@ import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Transactional
 @SpringBootTest(
@@ -38,8 +39,10 @@ public class BookingServiceImplTest {
     private final BookingService service;
     private final EntityManager em;
     private User user;
+    private User otherUser;
     private User booker;
     private Item item;
+    private Item itemTwo;
     private Booking booking;
     private BookingDto bookingDto;
     private LocalDateTime start;
@@ -48,13 +51,14 @@ public class BookingServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        String str = "2023-06-05 11:30:40";
         formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
         user = makeUserEntity("Ivan", "ivan@email");
         em.persist(user);
         em.flush();
-        UserDto userDto = makeUserDto("Ivan", "ivan@email");
+        otherUser = makeUserEntity("Anna", "anna@email");
+        em.persist(otherUser);
+        em.flush();
         booker = makeUserEntity("Dima", "dima@email");
         em.persist(booker);
         em.flush();
@@ -63,18 +67,16 @@ public class BookingServiceImplTest {
         item = makeItemEntity("item N1", "description", true, user);
         em.persist(item);
         em.flush();
-        ItemDtoWithOutBooking itemDto = makeItemDto("item N1", "description", true);
+        itemTwo = makeItemEntity("item N2", "description2", true, user);
+        em.persist(itemTwo);
+        em.flush();
         ItemDtoWithBooking itemDtoWithBooking = makeItemDtoWithBooking("item N1", "description", true, user.getId());
-        ItemDtoWithOutBooking itemDtoPatch = makeItemDtoPatch("item N1 update");
-        Item itemPatched = makeItemEntity("item N1 update", "description", true, user);
-
-        String startInstr = "2023-06-05 11:30:40";
-        String endInstr = "2023-06-05 11:50:40";
+        String startInstr = "2023-06-07 11:30:40";
+        String endInstr = "2023-06-07 11:50:40";
         start = LocalDateTime.parse(startInstr, formatter);
         end = LocalDateTime.parse(endInstr, formatter);
-        booking = makeBookingEntity(start, end, item, booker);
+        booking = makeBookingEntity(start, end, item, booker, BookingState.WAITING);
         bookingDto = makeBookingDto(start, end, item.getId());
-        BookingDtoWithInfo bookingDtoWithInfo = makeBookingDtoWithInfo(start, end, itemDtoWithBooking, bookerDto, BookingState.WAITING);
     }
 
     @Test
@@ -85,6 +87,100 @@ public class BookingServiceImplTest {
         assertThat(result.getEnd(), equalTo(bookingDto.getEnd()));
         assertThat(result.getBooker(), equalTo(UserMapper.mapToUserDto(booker)));
         assertThat(result.getItem(), equalTo(ItemMapper.mapToItemDto(item)));
+    }
+
+    @Test
+    void testCreateWithNotAvailableItem() {
+        item.setAvailable(false);
+        final NotAvailableItemException exception = assertThrows(
+                NotAvailableItemException.class,
+                () -> service.create(booker.getId(), bookingDto)
+        );
+        assertEquals(
+                String.format(ErrorMessage.AVAILABLE_NOT_AVAILABLE, bookingDto.getItemId()),
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void testCreateWithOwnerForYourSelf() {
+        item.setAvailable(false);
+        final NotFoundException exception = assertThrows(
+                NotFoundException.class,
+                () -> service.create(user.getId(), bookingDto)
+        );
+        assertEquals(
+                String.format(ErrorMessage.OWNER_ITEM, user.getId()),
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void testCreateWithNullStart() {
+        bookingDto.setStart(null);
+        final NotValidDateException exception = assertThrows(
+                NotValidDateException.class,
+                () -> service.create(user.getId(), bookingDto)
+        );
+        assertEquals(ErrorMessage.START_IS_NUll, exception.getMessage());
+    }
+
+    @Test
+    void testCreateWithNullEnd() {
+        bookingDto.setEnd(null);
+        final NotValidDateException exception = assertThrows(
+                NotValidDateException.class,
+                () -> service.create(user.getId(), bookingDto)
+        );
+        assertEquals(ErrorMessage.END_IS_NUll, exception.getMessage());
+    }
+
+    @Test
+    void testCreateWithStartInPast() {
+        String startInstr = "2022-07-07 11:30:40";
+        start = LocalDateTime.parse(startInstr, formatter);
+        bookingDto.setStart(start);
+        final NotValidDateException exception = assertThrows(
+                NotValidDateException.class,
+                () -> service.create(user.getId(), bookingDto)
+        );
+        assertEquals(ErrorMessage.START_IN_PAST, exception.getMessage());
+    }
+
+    @Test
+    void testCreateWithEndInPast() {
+        String endInstr = "2022-07-07 11:30:40";
+        end = LocalDateTime.parse(endInstr, formatter);
+        bookingDto.setEnd(end);
+        final NotValidDateException exception = assertThrows(
+                NotValidDateException.class,
+                () -> service.create(user.getId(), bookingDto)
+        );
+        assertEquals(ErrorMessage.END_IN_PAST, exception.getMessage());
+    }
+
+    @Test
+    void testCreateWithEndBeforeStart() {
+        String endInstr = "2023-06-07 10:30:40";
+        end = LocalDateTime.parse(endInstr, formatter);
+        bookingDto.setEnd(end);
+        final NotValidDateException exception = assertThrows(
+                NotValidDateException.class,
+                () -> service.create(user.getId(), bookingDto)
+        );
+        assertEquals(ErrorMessage.END_BEFORE_START, exception.getMessage());
+    }
+
+    @Test
+    void testCreateWithEndEqualsStart() {
+        String endInstr = "2023-06-07 11:30:40";
+        end = LocalDateTime.parse(endInstr, formatter);
+        bookingDto.setEnd(end);
+        final NotValidDateException exception = assertThrows(
+                NotValidDateException.class,
+                () -> service.create(user.getId(), bookingDto)
+        );
+        assertEquals(ErrorMessage.START_EQUAL_END, exception.getMessage());
     }
 
     @Test
@@ -112,14 +208,28 @@ public class BookingServiceImplTest {
     }
 
     @Test
+    void testGetWithOtherUser() {
+        em.persist(booking);
+        em.flush();
+        final NotValidOwnerException exception = assertThrows(
+                NotValidOwnerException.class,
+                () -> service.get(otherUser.getId(), booking.getId())
+        );
+        assertEquals(
+                String.format(ErrorMessage.BOOKER_OR_OWNER_ID_NOT_VALID, otherUser.getId(), booking.getItem().getId()),
+                exception.getMessage()
+        );
+    }
+
+    @Test
     void testAllByBooker() {
         String startInstrForSecondBooking = "2023-08-05 11:30:40";
         String endInstrForSecondBooking = "2023-08-05 11:50:40";
         LocalDateTime startForSecondBooking = LocalDateTime.parse(startInstrForSecondBooking, formatter);
         LocalDateTime endForSecondBooking = LocalDateTime.parse(endInstrForSecondBooking, formatter);
         List<Booking> sourceBookings = List.of(
-                makeBookingEntity(start, end, item, booker),
-                makeBookingEntity(startForSecondBooking, endForSecondBooking, item, booker)
+                makeBookingEntity(start, end, item, booker, BookingState.WAITING),
+                makeBookingEntity(startForSecondBooking, endForSecondBooking, item, booker, BookingState.WAITING)
         );
         for (Booking booking : sourceBookings) {
             em.persist(booking);
@@ -141,14 +251,171 @@ public class BookingServiceImplTest {
     }
 
     @Test
+    void testGetAllByBookerWithPageParameter() {
+        String startInstrForSecondBooking = "2023-08-05 11:30:40";
+        String endInstrForSecondBooking = "2023-08-05 11:50:40";
+        LocalDateTime startForSecondBooking = LocalDateTime.parse(startInstrForSecondBooking, formatter);
+        LocalDateTime endForSecondBooking = LocalDateTime.parse(endInstrForSecondBooking, formatter);
+        List<Booking> sourceBookings = List.of(
+                makeBookingEntity(start, end, item, booker, BookingState.WAITING),
+                makeBookingEntity(startForSecondBooking, endForSecondBooking, item, booker, BookingState.WAITING)
+        );
+        for (Booking booking : sourceBookings) {
+            em.persist(booking);
+        }
+        em.flush();
+        List<BookingDtoWithInfo> bookings = service.getAllByBooker(booker.getId(),
+                new Filter(new StateHolder("ALL"), new PageParameter(0, 3)));
+        assertThat(bookings, hasSize(sourceBookings.size()));
+        for (Booking booking: sourceBookings) {
+            assertThat(bookings, hasItem(allOf(
+                    hasProperty("id", notNullValue()),
+                    hasProperty("start", equalTo(booking.getStart())),
+                    hasProperty("end", equalTo(booking.getEnd())),
+                    hasProperty("booker", equalTo(UserMapper.mapToUserDto(booking.getBooker()))),
+                    hasProperty("item", equalTo(ItemMapper.mapToItemDto(booking.getItem()))),
+                    hasProperty("status", equalTo(booking.getState()))
+            )));
+        }
+    }
+
+    @Test
+    void testGetAllByBookerWithPageParameterWithApprovedState() {
+        String startInstrForSecondBooking = "2023-08-05 11:30:40";
+        String endInstrForSecondBooking = "2023-08-05 11:50:40";
+        LocalDateTime startForSecondBooking = LocalDateTime.parse(startInstrForSecondBooking, formatter);
+        LocalDateTime endForSecondBooking = LocalDateTime.parse(endInstrForSecondBooking, formatter);
+        List<Booking> sourceBookings = List.of(
+                makeBookingEntity(start, end, item, booker, BookingState.WAITING),
+                makeBookingEntity(startForSecondBooking, endForSecondBooking, item, booker, BookingState.WAITING)
+        );
+        for (Booking booking : sourceBookings) {
+            em.persist(booking);
+        }
+        em.flush();
+        List<BookingDtoWithInfo> bookings = service.getAllByBooker(booker.getId(),
+                new Filter(new StateHolder("WAITING"), new PageParameter(0, 3)));
+        assertThat(bookings, hasSize(sourceBookings.size()));
+        for (Booking booking: sourceBookings) {
+            assertThat(bookings, hasItem(allOf(
+                    hasProperty("id", notNullValue()),
+                    hasProperty("start", equalTo(booking.getStart())),
+                    hasProperty("end", equalTo(booking.getEnd())),
+                    hasProperty("booker", equalTo(UserMapper.mapToUserDto(booking.getBooker()))),
+                    hasProperty("item", equalTo(ItemMapper.mapToItemDto(booking.getItem()))),
+                    hasProperty("status", equalTo(booking.getState()))
+            )));
+        }
+    }
+
+    @Test
+    void testGetAllByBookerWithPageParameterWithApprovedStateWithPastBooking() {
+        String startInstr = "2022-05-05 11:30:40";
+        String endInstr = "2022-07-05 11:50:40";
+        LocalDateTime start = LocalDateTime.parse(startInstr, formatter);
+        LocalDateTime end = LocalDateTime.parse(endInstr, formatter);
+        String startInstrForSecondBooking = "2022-08-05 11:30:40";
+        String endInstrForSecondBooking = "2022-08-05 11:50:40";
+        LocalDateTime startForSecondBooking = LocalDateTime.parse(startInstrForSecondBooking, formatter);
+        LocalDateTime endForSecondBooking = LocalDateTime.parse(endInstrForSecondBooking, formatter);
+        List<Booking> sourceBookings = List.of(
+                makeBookingEntity(start, end, item, booker, BookingState.WAITING),
+                makeBookingEntity(startForSecondBooking, endForSecondBooking, item, booker, BookingState.WAITING)
+        );
+        for (Booking booking : sourceBookings) {
+            em.persist(booking);
+        }
+        em.flush();
+        List<BookingDtoWithInfo> bookings = service.getAllByBooker(booker.getId(),
+                new Filter(new StateHolder("PAST"), new PageParameter(0, 3)));
+        assertThat(bookings, hasSize(sourceBookings.size()));
+        for (Booking booking: sourceBookings) {
+            assertThat(bookings, hasItem(allOf(
+                    hasProperty("id", notNullValue()),
+                    hasProperty("start", equalTo(booking.getStart())),
+                    hasProperty("end", equalTo(booking.getEnd())),
+                    hasProperty("booker", equalTo(UserMapper.mapToUserDto(booking.getBooker()))),
+                    hasProperty("item", equalTo(ItemMapper.mapToItemDto(booking.getItem()))),
+                    hasProperty("status", equalTo(booking.getState()))
+            )));
+        }
+    }
+
+    @Test
+    void testGetAllByBookerWithPageParameterWithApprovedStateWithCurrentBooking() {
+        String startInstr = "2023-05-05 11:30:40";
+        String endInstr = "2023-07-05 11:50:40";
+        LocalDateTime start = LocalDateTime.parse(startInstr, formatter);
+        LocalDateTime end = LocalDateTime.parse(endInstr, formatter);
+        String startInstrForSecondBooking = "2023-05-05 11:30:40";
+        String endInstrForSecondBooking = "2023-08-05 11:50:40";
+        LocalDateTime startForSecondBooking = LocalDateTime.parse(startInstrForSecondBooking, formatter);
+        LocalDateTime endForSecondBooking = LocalDateTime.parse(endInstrForSecondBooking, formatter);
+        List<Booking> sourceBookings = List.of(
+                makeBookingEntity(start, end, item, booker, BookingState.WAITING),
+                makeBookingEntity(startForSecondBooking, endForSecondBooking, itemTwo, booker, BookingState.WAITING)
+        );
+        for (Booking booking : sourceBookings) {
+            em.persist(booking);
+        }
+        em.flush();
+        List<BookingDtoWithInfo> bookings = service.getAllByBooker(booker.getId(),
+                new Filter(new StateHolder("CURRENT"), new PageParameter(0, 3)));
+        assertThat(bookings, hasSize(sourceBookings.size()));
+        for (Booking booking: sourceBookings) {
+            assertThat(bookings, hasItem(allOf(
+                    hasProperty("id", notNullValue()),
+                    hasProperty("start", equalTo(booking.getStart())),
+                    hasProperty("end", equalTo(booking.getEnd())),
+                    hasProperty("booker", equalTo(UserMapper.mapToUserDto(booking.getBooker()))),
+                    hasProperty("item", equalTo(ItemMapper.mapToItemDto(booking.getItem()))),
+                    hasProperty("status", equalTo(booking.getState()))
+            )));
+        }
+    }
+
+    @Test
+    void testGetAllByBookerWithPageParameterWithApprovedStateWithFutureBooking() {
+        String startInstr = "2023-07-05 11:30:40";
+        String endInstr = "2023-07-05 11:50:40";
+        LocalDateTime start = LocalDateTime.parse(startInstr, formatter);
+        LocalDateTime end = LocalDateTime.parse(endInstr, formatter);
+        String startInstrForSecondBooking = "2023-07-05 11:30:40";
+        String endInstrForSecondBooking = "2023-08-05 11:50:40";
+        LocalDateTime startForSecondBooking = LocalDateTime.parse(startInstrForSecondBooking, formatter);
+        LocalDateTime endForSecondBooking = LocalDateTime.parse(endInstrForSecondBooking, formatter);
+        List<Booking> sourceBookings = List.of(
+                makeBookingEntity(start, end, item, booker, BookingState.WAITING),
+                makeBookingEntity(startForSecondBooking, endForSecondBooking, itemTwo, booker, BookingState.WAITING)
+        );
+        for (Booking booking : sourceBookings) {
+            em.persist(booking);
+        }
+        em.flush();
+        List<BookingDtoWithInfo> bookings = service.getAllByBooker(booker.getId(),
+                new Filter(new StateHolder("FUTURE"), new PageParameter(0, 3)));
+        assertThat(bookings, hasSize(sourceBookings.size()));
+        for (Booking booking: sourceBookings) {
+            assertThat(bookings, hasItem(allOf(
+                    hasProperty("id", notNullValue()),
+                    hasProperty("start", equalTo(booking.getStart())),
+                    hasProperty("end", equalTo(booking.getEnd())),
+                    hasProperty("booker", equalTo(UserMapper.mapToUserDto(booking.getBooker()))),
+                    hasProperty("item", equalTo(ItemMapper.mapToItemDto(booking.getItem()))),
+                    hasProperty("status", equalTo(booking.getState()))
+            )));
+        }
+    }
+
+    @Test
     void testGetAllByOwner() {
         String startInstrForSecondBooking = "2023-08-05 11:30:40";
         String endInstrForSecondBooking = "2023-08-05 11:50:40";
         LocalDateTime startForSecondBooking = LocalDateTime.parse(startInstrForSecondBooking, formatter);
         LocalDateTime endForSecondBooking = LocalDateTime.parse(endInstrForSecondBooking, formatter);
         List<Booking> sourceBookings = List.of(
-                makeBookingEntity(start, end, item, booker),
-                makeBookingEntity(startForSecondBooking, endForSecondBooking, item, booker)
+                makeBookingEntity(start, end, item, booker, BookingState.WAITING),
+                makeBookingEntity(startForSecondBooking, endForSecondBooking, item, booker, BookingState.WAITING)
         );
         for (Booking booking : sourceBookings) {
             em.persist(booking);
@@ -169,6 +436,245 @@ public class BookingServiceImplTest {
         }
     }
 
+    @Test
+    void testGetAllByOwnerWithPageParameter() {
+        String startInstrForSecondBooking = "2023-08-05 11:30:40";
+        String endInstrForSecondBooking = "2023-08-05 11:50:40";
+        LocalDateTime startForSecondBooking = LocalDateTime.parse(startInstrForSecondBooking, formatter);
+        LocalDateTime endForSecondBooking = LocalDateTime.parse(endInstrForSecondBooking, formatter);
+        List<Booking> sourceBookings = List.of(
+                makeBookingEntity(start, end, item, booker, BookingState.WAITING),
+                makeBookingEntity(startForSecondBooking, endForSecondBooking, item, booker, BookingState.WAITING)
+        );
+        for (Booking booking : sourceBookings) {
+            em.persist(booking);
+        }
+        em.flush();
+        List<BookingDtoWithInfo> bookings = service.getAllByOwner(user.getId(),
+                new Filter(new StateHolder("ALL"), new PageParameter(0, 3)));
+        assertThat(bookings, hasSize(sourceBookings.size()));
+        for (Booking booking: sourceBookings) {
+            assertThat(bookings, hasItem(allOf(
+                    hasProperty("id", notNullValue()),
+                    hasProperty("start", equalTo(booking.getStart())),
+                    hasProperty("end", equalTo(booking.getEnd())),
+                    hasProperty("booker", equalTo(UserMapper.mapToUserDto(booking.getBooker()))),
+                    hasProperty("item", equalTo(ItemMapper.mapToItemDto(booking.getItem()))),
+                    hasProperty("status", equalTo(booking.getState()))
+            )));
+        }
+    }
+
+    @Test
+    void testGetAllByOwnerWithPageParameterWithApprovedState() {
+        String startInstrForSecondBooking = "2023-08-05 11:30:40";
+        String endInstrForSecondBooking = "2023-08-05 11:50:40";
+        LocalDateTime startForSecondBooking = LocalDateTime.parse(startInstrForSecondBooking, formatter);
+        LocalDateTime endForSecondBooking = LocalDateTime.parse(endInstrForSecondBooking, formatter);
+        List<Booking> sourceBookings = List.of(
+                makeBookingEntity(start, end, item, booker, BookingState.WAITING),
+                makeBookingEntity(startForSecondBooking, endForSecondBooking, item, booker, BookingState.WAITING)
+        );
+        for (Booking booking : sourceBookings) {
+            em.persist(booking);
+        }
+        em.flush();
+        List<BookingDtoWithInfo> bookings = service.getAllByOwner(user.getId(),
+                new Filter(new StateHolder("WAITING"), new PageParameter(0, 3)));
+        assertThat(bookings, hasSize(sourceBookings.size()));
+        for (Booking booking: sourceBookings) {
+            assertThat(bookings, hasItem(allOf(
+                    hasProperty("id", notNullValue()),
+                    hasProperty("start", equalTo(booking.getStart())),
+                    hasProperty("end", equalTo(booking.getEnd())),
+                    hasProperty("booker", equalTo(UserMapper.mapToUserDto(booking.getBooker()))),
+                    hasProperty("item", equalTo(ItemMapper.mapToItemDto(booking.getItem()))),
+                    hasProperty("status", equalTo(booking.getState()))
+            )));
+        }
+    }
+
+    @Test
+    void testGetAllByOwnerWithWronState() {
+        String startInstrForSecondBooking = "2023-08-05 11:30:40";
+        String endInstrForSecondBooking = "2023-08-05 11:50:40";
+        LocalDateTime startForSecondBooking = LocalDateTime.parse(startInstrForSecondBooking, formatter);
+        LocalDateTime endForSecondBooking = LocalDateTime.parse(endInstrForSecondBooking, formatter);
+        List<Booking> sourceBookings = List.of(
+                makeBookingEntity(start, end, item, booker, BookingState.WAITING),
+                makeBookingEntity(startForSecondBooking, endForSecondBooking, item, booker, BookingState.WAITING)
+        );
+        for (Booking booking : sourceBookings) {
+            em.persist(booking);
+        }
+        em.flush();
+        final UnSupportedStatusException exception = assertThrows(
+                UnSupportedStatusException.class,
+                () -> service.getAllByOwner(user.getId(),
+                        new Filter(new StateHolder("UNSUPPORTED_STATE"), new PageParameter(0, 3)))
+        );
+        assertEquals(String.format(ErrorMessage.UNSUPPORTED_STATUS, "UNSUPPORTED_STATE"), exception.getMessage());
+    }
+
+    @Test
+    void testGetAllByOwnerWithWrongPageParameter() {
+        String startInstrForSecondBooking = "2023-08-05 11:30:40";
+        String endInstrForSecondBooking = "2023-08-05 11:50:40";
+        LocalDateTime startForSecondBooking = LocalDateTime.parse(startInstrForSecondBooking, formatter);
+        LocalDateTime endForSecondBooking = LocalDateTime.parse(endInstrForSecondBooking, formatter);
+        List<Booking> sourceBookings = List.of(
+                makeBookingEntity(start, end, item, booker, BookingState.WAITING),
+                makeBookingEntity(startForSecondBooking, endForSecondBooking, item, booker, BookingState.WAITING)
+        );
+        for (Booking booking : sourceBookings) {
+            em.persist(booking);
+        }
+        em.flush();
+        final NotValidParameterException exception = assertThrows(
+                NotValidParameterException.class,
+                () -> service.getAllByOwner(user.getId(),
+                        new Filter(new StateHolder("ALL"), new PageParameter(-1, 3)))
+        );
+        assertEquals(String.format(ErrorMessage.NOT_VALID_PARAMETER, -1), exception.getMessage());
+    }
+
+    @Test
+    void testGetAllByOwnerWithPageParameterWithApprovedStateWithPastBooking() {
+        String startInstr = "2022-05-05 11:30:40";
+        String endInstr = "2022-07-05 11:50:40";
+        LocalDateTime start = LocalDateTime.parse(startInstr, formatter);
+        LocalDateTime end = LocalDateTime.parse(endInstr, formatter);
+        String startInstrForSecondBooking = "2022-08-05 11:30:40";
+        String endInstrForSecondBooking = "2022-08-05 11:50:40";
+        LocalDateTime startForSecondBooking = LocalDateTime.parse(startInstrForSecondBooking, formatter);
+        LocalDateTime endForSecondBooking = LocalDateTime.parse(endInstrForSecondBooking, formatter);
+        List<Booking> sourceBookings = List.of(
+                makeBookingEntity(start, end, item, booker, BookingState.WAITING),
+                makeBookingEntity(startForSecondBooking, endForSecondBooking, item, booker, BookingState.WAITING)
+        );
+        for (Booking booking : sourceBookings) {
+            em.persist(booking);
+        }
+        em.flush();
+        List<BookingDtoWithInfo> bookings = service.getAllByOwner(user.getId(),
+                new Filter(new StateHolder("PAST"), new PageParameter(0, 3)));
+        assertThat(bookings, hasSize(sourceBookings.size()));
+        for (Booking booking: sourceBookings) {
+            assertThat(bookings, hasItem(allOf(
+                    hasProperty("id", notNullValue()),
+                    hasProperty("start", equalTo(booking.getStart())),
+                    hasProperty("end", equalTo(booking.getEnd())),
+                    hasProperty("booker", equalTo(UserMapper.mapToUserDto(booking.getBooker()))),
+                    hasProperty("item", equalTo(ItemMapper.mapToItemDto(booking.getItem()))),
+                    hasProperty("status", equalTo(booking.getState()))
+            )));
+        }
+    }
+
+    @Test
+    void testGetAllByOwnerWithPageParameterWithApprovedStateWithCurrentBooking() {
+        String startInstr = "2023-05-05 11:30:40";
+        String endInstr = "2023-07-05 11:50:40";
+        LocalDateTime start = LocalDateTime.parse(startInstr, formatter);
+        LocalDateTime end = LocalDateTime.parse(endInstr, formatter);
+        String startInstrForSecondBooking = "2023-05-05 11:30:40";
+        String endInstrForSecondBooking = "2023-08-05 11:50:40";
+        LocalDateTime startForSecondBooking = LocalDateTime.parse(startInstrForSecondBooking, formatter);
+        LocalDateTime endForSecondBooking = LocalDateTime.parse(endInstrForSecondBooking, formatter);
+        List<Booking> sourceBookings = List.of(
+                makeBookingEntity(start, end, item, booker, BookingState.WAITING),
+                makeBookingEntity(startForSecondBooking, endForSecondBooking, itemTwo, booker, BookingState.WAITING)
+        );
+        for (Booking booking : sourceBookings) {
+            em.persist(booking);
+        }
+        em.flush();
+        List<BookingDtoWithInfo> bookings = service.getAllByOwner(user.getId(),
+                new Filter(new StateHolder("CURRENT"), new PageParameter(0, 3)));
+        assertThat(bookings, hasSize(sourceBookings.size()));
+        for (Booking booking: sourceBookings) {
+            assertThat(bookings, hasItem(allOf(
+                    hasProperty("id", notNullValue()),
+                    hasProperty("start", equalTo(booking.getStart())),
+                    hasProperty("end", equalTo(booking.getEnd())),
+                    hasProperty("booker", equalTo(UserMapper.mapToUserDto(booking.getBooker()))),
+                    hasProperty("item", equalTo(ItemMapper.mapToItemDto(booking.getItem()))),
+                    hasProperty("status", equalTo(booking.getState()))
+            )));
+        }
+    }
+
+    @Test
+    void testGetAllByOwnerWithPageParameterWithApprovedStateWithFutureBooking() {
+        String startInstr = "2023-07-05 11:30:40";
+        String endInstr = "2023-07-05 11:50:40";
+        LocalDateTime start = LocalDateTime.parse(startInstr, formatter);
+        LocalDateTime end = LocalDateTime.parse(endInstr, formatter);
+        String startInstrForSecondBooking = "2023-07-05 11:30:40";
+        String endInstrForSecondBooking = "2023-08-05 11:50:40";
+        LocalDateTime startForSecondBooking = LocalDateTime.parse(startInstrForSecondBooking, formatter);
+        LocalDateTime endForSecondBooking = LocalDateTime.parse(endInstrForSecondBooking, formatter);
+        List<Booking> sourceBookings = List.of(
+                makeBookingEntity(start, end, item, booker, BookingState.WAITING),
+                makeBookingEntity(startForSecondBooking, endForSecondBooking, itemTwo, booker, BookingState.WAITING)
+        );
+        for (Booking booking : sourceBookings) {
+            em.persist(booking);
+        }
+        em.flush();
+        List<BookingDtoWithInfo> bookings = service.getAllByOwner(user.getId(),
+                new Filter(new StateHolder("FUTURE"), new PageParameter(0, 3)));
+        assertThat(bookings, hasSize(sourceBookings.size()));
+        for (Booking booking: sourceBookings) {
+            assertThat(bookings, hasItem(allOf(
+                    hasProperty("id", notNullValue()),
+                    hasProperty("start", equalTo(booking.getStart())),
+                    hasProperty("end", equalTo(booking.getEnd())),
+                    hasProperty("booker", equalTo(UserMapper.mapToUserDto(booking.getBooker()))),
+                    hasProperty("item", equalTo(ItemMapper.mapToItemDto(booking.getItem()))),
+                    hasProperty("status", equalTo(booking.getState()))
+            )));
+        }
+    }
+
+    @Test
+    void testApproveByOwner() {
+        em.persist(booking);
+        em.flush();
+        BookingDtoWithInfo result = service.approve(user.getId(), booking.getId(), true);
+        assertThat(result.getId(), notNullValue());
+        assertThat(result.getStart(), equalTo(bookingDto.getStart()));
+        assertThat(result.getEnd(), equalTo(bookingDto.getEnd()));
+        assertThat(result.getBooker(), equalTo(UserMapper.mapToUserDto(booker)));
+        assertThat(result.getStatus(), equalTo(BookingState.APPROVED));
+        assertThat(result.getItem(), equalTo(ItemMapper.mapToItemDto(item)));
+    }
+
+    @Test
+    void testApproveIfRejectedAlready() {
+        booking.setState(BookingState.REJECTED);
+        em.persist(booking);
+        em.flush();
+        final NotValidDataForUpdateException exception = assertThrows(
+                NotValidDataForUpdateException.class,
+                () -> service.approve(user.getId(), booking.getId(), true)
+        );
+        assertEquals(String.format(ErrorMessage.BOOKING_ALREADY_APPROVED, booking.getId()), exception.getMessage());
+    }
+
+    @Test
+    void testApproveByBooker() {
+        em.persist(booking);
+        em.flush();
+        final NotValidOwnerException exception = assertThrows(
+                NotValidOwnerException.class,
+                () -> service.approve(booker.getId(), booking.getId(), true)
+        );
+        assertEquals(String.format(ErrorMessage.USER_ID_NOT_VALID, booker.getId(), booking.getItem().getId()),
+                exception.getMessage()
+        );
+    }
+
     private User makeUserEntity(String name, String email) {
         User user = new User();
         user.setName(name);
@@ -183,14 +689,6 @@ public class BookingServiceImplTest {
         return userDto;
     }
 
-    private Request makeRequestEntity(String description, LocalDateTime created, User requestor) {
-        Request request = new Request();
-        request.setDescription(description);
-        request.setCreated(created);
-        request.setRequestor(requestor);
-        return request;
-    }
-
     private Item makeItemEntity(String name, String description, Boolean available, User user) {
         Item item = new Item();
         item.setName(name);
@@ -198,14 +696,6 @@ public class BookingServiceImplTest {
         item.setAvailable(available);
         item.setUser(user);
         return item;
-    }
-
-    private ItemDtoWithOutBooking makeItemDto(String name, String description, Boolean available) {
-        ItemDtoWithOutBooking itemDto = new ItemDtoWithOutBooking();
-        itemDto.setName(name);
-        itemDto.setDescription(description);
-        itemDto.setAvailable(available);
-        return itemDto;
     }
 
     private ItemDtoWithBooking makeItemDtoWithBooking(String name, String description, Boolean available, long requestId) {
@@ -217,22 +707,16 @@ public class BookingServiceImplTest {
         return itemDtoWithBooking;
     }
 
-    private ItemDtoWithOutBooking makeItemDtoPatch(String name) {
-        ItemDtoWithOutBooking itemDto = new ItemDtoWithOutBooking();
-        itemDto.setName(name);
-        return itemDto;
-    }
-
-
-
     private Booking makeBookingEntity(LocalDateTime dateTimeOne,
-                                       LocalDateTime dateTimeTwo,
-                                       Item item,
-                                       User user) {
+                                      LocalDateTime dateTimeTwo,
+                                      Item item,
+                                      User user,
+                                      BookingState state) {
         Booking booking = new Booking();
         booking.setStart(dateTimeOne);
         booking.setEnd(dateTimeTwo);
         booking.setItem(item);
+        booking.setState(state);
         booking.setBooker(user);
         return booking;
     }
@@ -245,27 +729,5 @@ public class BookingServiceImplTest {
         bookingDto.setEnd(dateTimeTwo);
         bookingDto.setItemId(itemId);
         return bookingDto;
-    }
-
-    private BookingDtoWithInfo makeBookingDtoWithInfo(LocalDateTime dateTimeOne,
-                                                      LocalDateTime dateTimeTwo,
-                                                      ItemDtoWithBooking item,
-                                                      UserDto user,
-                                                      BookingState state) {
-        BookingDtoWithInfo bookingDto = new BookingDtoWithInfo();
-        bookingDto.setStart(dateTimeOne);
-        bookingDto.setEnd(dateTimeTwo);
-        bookingDto.setItem(item);
-        bookingDto.setBooker(user);
-        bookingDto.setStatus(state);
-        return bookingDto;
-    }
-
-    private CommentDto makeCommentDto(String text, String authorName, LocalDateTime dateTimeOne) {
-        CommentDto commentDto = new CommentDto();
-        commentDto.setText(text);
-        commentDto.setAuthorName(authorName);
-        commentDto.setCreated(dateTimeOne.toString());
-        return commentDto;
     }
 }

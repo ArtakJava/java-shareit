@@ -54,10 +54,4 @@ public class BookingController {
         log.info(InfoMessage.GET_UPDATE_REQUEST, bookingId);
         return service.approve(userId, bookingId, isApproved);
     }
-
-    @DeleteMapping("/{userId}")
-    public void delete(@PathVariable long userId) {
-        log.info(InfoMessage.GET_UPDATE_REQUEST, userId);
-        service.delete(userId);
-    }
 }
