@@ -32,7 +32,7 @@ public class ItemController {
     }
 
     @GetMapping
-    public List<ItemDtoWithBooking> get(@RequestHeader("X-Sharer-User-Id") long userId) {
+    public List<ItemDtoWithBooking> getAllByUser(@RequestHeader("X-Sharer-User-Id") long userId) {
         log.info(InfoMessage.GET_ALL_BY_USER_REQUEST, userId);
         return service.getAllByUser(userId);
     }
