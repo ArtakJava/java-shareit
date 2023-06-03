@@ -27,8 +27,6 @@ import static org.hamcrest.Matchers.*;
 public class BookingRepositoryDataJpaTest {
     private final TestEntityManager em;
     private final BookingRepository bookingRepository;
-    private Booking lastBooking;
-    private Booking nextBooking;
     private LocalDateTime start;
     private LocalDateTime end;
     private DateTimeFormatter formatter;
@@ -53,7 +51,7 @@ public class BookingRepositoryDataJpaTest {
         String endInstr = "2023-07-07 11:50:40";
         start = LocalDateTime.parse(startInstr, formatter);
         end = LocalDateTime.parse(endInstr, formatter);
-        nextBooking = makeBookingEntity(start, end, item, booker, BookingState.WAITING);
+        Booking nextBooking = makeBookingEntity(start, end, item, booker, BookingState.WAITING);
         List<Booking> sourceBookings = new ArrayList<>(List.of(nextBooking));
         em.persist(nextBooking);
         List<BookingDtoWithBookerAndItem> nextBookingDtoWithBookers = bookingRepository.findNextBookingForItemsByUser(
@@ -75,7 +73,7 @@ public class BookingRepositoryDataJpaTest {
         String endInstr = "2023-05-07 11:50:40";
         start = LocalDateTime.parse(startInstr, formatter);
         end = LocalDateTime.parse(endInstr, formatter);
-        lastBooking = makeBookingEntity(start, end, item, booker, BookingState.WAITING);
+        Booking lastBooking = makeBookingEntity(start, end, item, booker, BookingState.WAITING);
         List<Booking> sourceBookings = new ArrayList<>(List.of(lastBooking));
         em.persist(lastBooking);
         List<BookingDtoWithBookerAndItem> lastBookingForItemsByUser = bookingRepository.findLastBookingForItemsByUser(
