@@ -5,7 +5,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingDtoWithInfo;
@@ -32,10 +31,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Transactional
 @SpringBootTest(
+        properties = "db.name = test",
         webEnvironment = SpringBootTest.WebEnvironment.NONE
 )
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@TestPropertySource(locations = "classpath:test.properties")
 public class BookingServiceImplTest {
     private final BookingService service;
     private final EntityManager em;
@@ -63,7 +62,6 @@ public class BookingServiceImplTest {
         booker = makeUserEntity("Dima", "dima@email");
         em.persist(booker);
         em.flush();
-        UserDto bookerDto = makeUserDto("Dima", "ivan@dima");
 
         item = makeItemEntity("item N1", "description", true, user);
         em.persist(item);
@@ -71,7 +69,6 @@ public class BookingServiceImplTest {
         itemTwo = makeItemEntity("item N2", "description2", true, user);
         em.persist(itemTwo);
         em.flush();
-        ItemDtoWithBooking itemDtoWithBooking = makeItemDtoWithBooking("item N1", "description", true, user.getId());
         String startInstr = "2023-06-07 11:30:40";
         String endInstr = "2023-06-07 11:50:40";
         start = LocalDateTime.parse(startInstr, formatter);

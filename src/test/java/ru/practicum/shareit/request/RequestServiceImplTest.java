@@ -12,7 +12,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.PageParameter;
 import ru.practicum.shareit.item.dto.ItemDtoWithOutBooking;
@@ -37,11 +36,11 @@ import static org.mockito.ArgumentMatchers.anyLong;
 
 @Transactional
 @SpringBootTest(
+        properties = "db.name = test",
         webEnvironment = SpringBootTest.WebEnvironment.NONE
 )
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 @ExtendWith(MockitoExtension.class)
-@TestPropertySource(locations = "classpath:test.properties")
 public class RequestServiceImplTest {
     @InjectMocks
     private final RequestService service;

@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import ru.practicum.shareit.booking.dao.BookingRepository;
@@ -22,13 +21,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
 @DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class BookingRepositoryDataJpaTest {
     private final TestEntityManager em;
     private final BookingRepository bookingRepository;
-    private Booking lastBooking;
-    private Booking nextBooking;
     private LocalDateTime start;
     private LocalDateTime end;
     private DateTimeFormatter formatter;
@@ -53,7 +49,7 @@ public class BookingRepositoryDataJpaTest {
         String endInstr = "2023-07-07 11:50:40";
         start = LocalDateTime.parse(startInstr, formatter);
         end = LocalDateTime.parse(endInstr, formatter);
-        nextBooking = makeBookingEntity(start, end, item, booker, BookingState.WAITING);
+        Booking nextBooking = makeBookingEntity(start, end, item, booker, BookingState.WAITING);
         List<Booking> sourceBookings = new ArrayList<>(List.of(nextBooking));
         em.persist(nextBooking);
         List<BookingDtoWithBookerAndItem> nextBookingDtoWithBookers = bookingRepository.findNextBookingForItemsByUser(
@@ -75,13 +71,13 @@ public class BookingRepositoryDataJpaTest {
         String endInstr = "2023-05-07 11:50:40";
         start = LocalDateTime.parse(startInstr, formatter);
         end = LocalDateTime.parse(endInstr, formatter);
-        lastBooking = makeBookingEntity(start, end, item, booker, BookingState.WAITING);
+        Booking lastBooking = makeBookingEntity(start, end, item, booker, BookingState.WAITING);
         List<Booking> sourceBookings = new ArrayList<>(List.of(lastBooking));
         em.persist(lastBooking);
-        List<BookingDtoWithBookerAndItem> nextBookingDtoWithBookers = bookingRepository.findLastBookingForItemsByUser(
+        List<BookingDtoWithBookerAndItem> lastBookingForItemsByUser = bookingRepository.findLastBookingForItemsByUser(
                 user.getId(), LocalDateTime.now()
         );
-        assertThat(nextBookingDtoWithBookers, hasSize(sourceBookings.size()));
+        assertThat(lastBookingForItemsByUser, hasSize(sourceBookings.size()));
         for (Booking booking: sourceBookings) {
             assertThat(sourceBookings, hasItem(allOf(
                     hasProperty("id", notNullValue()),
