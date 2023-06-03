@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingDtoWithInfo;
@@ -31,10 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Transactional
 @SpringBootTest(
-        properties = "db.name = test",
         webEnvironment = SpringBootTest.WebEnvironment.NONE
 )
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
+@TestPropertySource(locations = "classpath:test.properties")
 public class BookingServiceImplTest {
     private final BookingService service;
     private final EntityManager em;
