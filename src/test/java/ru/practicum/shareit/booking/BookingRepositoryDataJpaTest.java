@@ -78,10 +78,10 @@ public class BookingRepositoryDataJpaTest {
         lastBooking = makeBookingEntity(start, end, item, booker, BookingState.WAITING);
         List<Booking> sourceBookings = new ArrayList<>(List.of(lastBooking));
         em.persist(lastBooking);
-        List<BookingDtoWithBookerAndItem> nextBookingDtoWithBookers = bookingRepository.findLastBookingForItemsByUser(
+        List<BookingDtoWithBookerAndItem> lastBookingForItemsByUser = bookingRepository.findLastBookingForItemsByUser(
                 user.getId(), LocalDateTime.now()
         );
-        assertThat(nextBookingDtoWithBookers, hasSize(sourceBookings.size()));
+        assertThat(lastBookingForItemsByUser, hasSize(sourceBookings.size()));
         for (Booking booking: sourceBookings) {
             assertThat(sourceBookings, hasItem(allOf(
                     hasProperty("id", notNullValue()),
