@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 )
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 @TestPropertySource(locations = "classpath:test.properties")
+@TestPropertySource(locations = "classpath:test.properties")
 public class UserServiceImplTest {
     private final UserService service;
     private final EntityManager em;
