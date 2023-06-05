@@ -10,18 +10,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.booking.PageParameter;
+import ru.practicum.shareit.PageRequestCustom;
 import ru.practicum.shareit.item.dto.ItemDtoWithOutBooking;
-import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.dao.RequestRepository;
 import ru.practicum.shareit.request.dto.RequestDto;
 import ru.practicum.shareit.request.model.Request;
 import ru.practicum.shareit.user.dao.UserRepository;
-import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.model.User;
 
 import javax.persistence.EntityManager;
@@ -43,6 +40,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 @ExtendWith(MockitoExtension.class)
 @TestPropertySource(locations = "classpath:test.properties")
 public class RequestServiceImplTest {
+    private static final Sort SORT_BY_CREATED_DESC = Sort.by("created").descending();
     @InjectMocks
     private final RequestService service;
     private final EntityManager em;
@@ -146,9 +144,11 @@ public class RequestServiceImplTest {
                 .when(userRepository.getReferenceById(anyLong()))
                 .thenReturn(user);
         Mockito
-                .when(requestRepository.findAllByRequestorIdNot(anyLong(), (PageRequest) any()))
+                .when(requestRepository.findAllByRequestorIdNot(anyLong(), any()))
                 .thenReturn(sourceRequests);
-        List<RequestDto> requests = service.getAll(user.getId(), new PageParameter(0, 3));
+        List<RequestDto> requests = service.getAll(
+                user.getId(), new PageRequestCustom(0, 3, SORT_BY_CREATED_DESC)
+        );
         assertThat(requests, hasSize(sourceRequestsDto.size()));
         for (RequestDto requestDto : sourceRequestsDto) {
             assertThat(requests, hasItem(allOf(
@@ -159,48 +159,11 @@ public class RequestServiceImplTest {
         }
     }
 
-    @Test
-    void testGetAllWithOutPageParameter() {
-        em.persist(user);
-        List<RequestDto> sourceRequestsDto = List.of(
-                makeRequestDto("Request N1", dateTime.toString(), new ArrayList<>()),
-                makeRequestDto("Request N2", dateTime.toString(), new ArrayList<>()),
-                makeRequestDto("Request N3", dateTime.toString(), new ArrayList<>())
-        );
-        List<Request> sourceRequests = new ArrayList<>();
-        for (RequestDto requestDto : sourceRequestsDto) {
-            Request entity = RequestMapper.mapToRequestEntity(requestDto, user);
-            sourceRequests.add(entity);
-        }
-        Mockito
-                .when(userRepository.getReferenceById(anyLong()))
-                .thenReturn(user);
-        Mockito
-                .when(requestRepository.findAllByRequestorIdNot(anyLong(), (Sort) any()))
-                .thenReturn(sourceRequests);
-        List<RequestDto> requests = service.getAll(user.getId(), new PageParameter(null, null));
-        assertThat(requests, hasSize(sourceRequestsDto.size()));
-        for (RequestDto requestDto : sourceRequestsDto) {
-            assertThat(requests, hasItem(allOf(
-                    hasProperty("id", notNullValue()),
-                    hasProperty("description", equalTo(requestDto.getDescription())),
-                    hasProperty("created", equalTo(requestDto.getCreated()))
-            )));
-        }
-    }
-
     private User makeUserEntity(String name, String email) {
         User user = new User();
         user.setName(name);
         user.setEmail(email);
         return user;
-    }
-
-    private UserDto makeUserDto(String name, String email) {
-        UserDto userDto = new UserDto();
-        userDto.setName(name);
-        userDto.setEmail(email);
-        return userDto;
     }
 
     private Request makeRequestEntity(String description, LocalDateTime created, User requestor) {
@@ -217,15 +180,6 @@ public class RequestServiceImplTest {
         requestDto.setCreated(created);
         requestDto.setItems(items);
         return requestDto;
-    }
-
-    private Item makeItemEntity(String name, String description, Boolean available, User user) {
-        Item item = new Item();
-        item.setName(name);
-        item.setDescription(description);
-        item.setAvailable(available);
-        item.setUser(user);
-        return item;
     }
 
     private ItemDtoWithOutBooking makeItemDto(String name, String description, Boolean available) {

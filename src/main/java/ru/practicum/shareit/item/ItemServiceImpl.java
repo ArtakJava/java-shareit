@@ -2,6 +2,7 @@ package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +37,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class ItemServiceImpl implements ItemService {
+    public static final Sort SORT_BY_START_DESC = Sort.by("start").descending();
+    public static final Sort SORT_BY_START_ASC = Sort.by("start").ascending();
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
@@ -70,7 +73,7 @@ public class ItemServiceImpl implements ItemService {
                             itemId,
                             BookingState.REJECTED,
                             LocalDateTime.now(),
-                            Sort.by("start").descending()
+                            PageRequest.of(0, 1, SORT_BY_START_DESC)
                     )
             );
             List<BookingDtoWithBooker> nextBookings = BookingMapper.mapBooksToBookingsDtoWithBooker(
@@ -78,7 +81,7 @@ public class ItemServiceImpl implements ItemService {
                             itemId,
                             BookingState.REJECTED,
                             LocalDateTime.now(),
-                            Sort.by("start").ascending()
+                            PageRequest.of(0, 1, SORT_BY_START_ASC)
                     )
             );
             if (!lastBookings.isEmpty()) {

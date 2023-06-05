@@ -1,7 +1,6 @@
 package ru.practicum.shareit.booking.dao;
 
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import ru.practicum.shareit.booking.BookingState;
@@ -14,13 +13,9 @@ import java.util.Set;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
-    List<Booking> findByItemUserIdAndStateIn(long ownerId, Set<BookingState> states, PageRequest pageRequest);
+    List<Booking> findByItemUserIdAndStateIn(long ownerId, Set<BookingState> states, Pageable pageable);
 
-    List<Booking> findByItemUserIdAndStateIn(long ownerId, Set<BookingState> states, Sort sort);
-
-    List<Booking> findByBookerIdAndStateIn(long bookerId, Set<BookingState> states, PageRequest pageRequest);
-
-    List<Booking> findByBookerIdAndStateIn(long bookerId, Set<BookingState> states, Sort sort);
+    List<Booking> findByBookerIdAndStateIn(long bookerId, Set<BookingState> states, Pageable pageable);
 
     List<Booking> findByBookerIdAndEndBeforeOrderByStartDesc(long bookerId, LocalDateTime now);
 
@@ -32,28 +27,28 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByBookerIdAndStartAfterOrderByStartDesc(long bookerId, LocalDateTime now);
 
-    List<Booking> findByItemUserIdAndEndBeforeOrderByStartDesc(long ownerId, LocalDateTime now, Sort sort);
+    List<Booking> findByItemUserIdAndEndBeforeOrderByStartDesc(long ownerId, LocalDateTime now, Pageable pageable);
 
     List<Booking> findByItemUserIdAndStartBeforeAndEndAfterOrderByStartDesc(
             long ownerId,
             LocalDateTime now,
             LocalDateTime nowRepeat,
-            Sort sort);
+            Pageable pageable);
 
-    List<Booking> findByItemUserIdAndStartAfterOrderByStartDesc(long ownerId, LocalDateTime now, Sort sort);
+    List<Booking> findByItemUserIdAndStartAfterOrderByStartDesc(long ownerId, LocalDateTime now, Pageable pageable);
 
     List<Booking> findByItemIdAndStateNotAndStartBefore(
             long itemId,
             BookingState state,
             LocalDateTime now,
-            Sort sort
+            Pageable pageable
     );
 
     List<Booking> findByItemIdAndStateNotAndStartAfter(
             long itemId,
             BookingState state,
             LocalDateTime now,
-            Sort sort
+            Pageable pageable
     );
 
     List<Booking> findByBookerIdAndItemIdAndEndBefore(long authorId, long itemId, LocalDateTime now);

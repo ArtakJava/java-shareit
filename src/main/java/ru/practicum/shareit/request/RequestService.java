@@ -1,6 +1,6 @@
 package ru.practicum.shareit.request;
 
-import ru.practicum.shareit.booking.PageParameter;
+import ru.practicum.shareit.PageRequestCustom;
 import ru.practicum.shareit.request.dto.RequestDto;
 import ru.practicum.shareit.user.model.User;
 
@@ -11,7 +11,7 @@ public interface RequestService {
 
     List<RequestDto> getOwnRequests(long userId);
 
-    List<RequestDto> getAll(long userId, PageParameter pageParameter);
+    List<RequestDto> getAll(long userId, PageRequestCustom pageRequest);
 
     RequestDto get(long userId, long requestId);
 

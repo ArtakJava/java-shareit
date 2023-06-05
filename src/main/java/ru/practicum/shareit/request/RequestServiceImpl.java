@@ -2,10 +2,9 @@ package ru.practicum.shareit.request;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import ru.practicum.shareit.booking.PageParameter;
+import ru.practicum.shareit.PageRequestCustom;
 import ru.practicum.shareit.item.dao.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.messageManager.MessageHolder;
@@ -47,19 +46,12 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
-    public List<RequestDto> getAll(long userId, PageParameter pageParameter) {
+    public List<RequestDto> getAll(long userId, PageRequestCustom pageRequest) {
         List<Request> requests;
-        if (pageParameter.isPresent()) {
-            requests = requestRepository.findAllByRequestorIdNot(
-                    userId,
-                    PageRequest.of(
-                            pageParameter.getPage(),
-                            pageParameter.getSize(),
-                            Sort.by("created").descending())
-            );
-        } else {
-            requests = requestRepository.findAllByRequestorIdNot(userId, Sort.by("created").descending());
-        }
+        requests = requestRepository.findAllByRequestorIdNot(
+                userId,
+                pageRequest
+        );
         List<RequestDto> requestsDto = requests.stream()
                 .map(RequestMapper::mapToRequestDto)
                 .collect(Collectors.toList());

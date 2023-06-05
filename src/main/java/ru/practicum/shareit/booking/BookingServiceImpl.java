@@ -2,8 +2,6 @@ package ru.practicum.shareit.booking;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.dao.BookingRepository;
 import ru.practicum.shareit.booking.dto.BookingDto;
@@ -77,23 +75,11 @@ public class BookingServiceImpl implements BookingService {
         switch (bookingState) {
             case ALL:
                 states.addAll(List.of(BookingState.values()));
-                if (filter.getPageParameter().isPresent()) {
-                    bookings = bookingRepository.findByBookerIdAndStateIn(
-                            booker.getId(),
-                            states,
-                            PageRequest.of(
-                                    filter.getPageParameter().getPage(),
-                                    filter.getPageParameter().getSize(),
-                                    Sort.by("start").descending()
-                            )
-                    );
-                } else {
-                    bookings = bookingRepository.findByBookerIdAndStateIn(
-                            booker.getId(),
-                            states,
-                            Sort.by("start").descending()
-                    );
-                }
+                bookings = bookingRepository.findByBookerIdAndStateIn(
+                        booker.getId(),
+                        states,
+                        filter.getPageRequest()
+                );
                 break;
             case APPROVED:
             case REJECTED:
@@ -102,7 +88,7 @@ public class BookingServiceImpl implements BookingService {
                 bookings = bookingRepository.findByBookerIdAndStateIn(
                         booker.getId(),
                         states,
-                        Sort.by("start").descending()
+                        filter.getPageRequest()
                 );
                 break;
             case PAST:
@@ -141,23 +127,11 @@ public class BookingServiceImpl implements BookingService {
         switch (bookingState) {
             case ALL:
                 states.addAll(List.of(BookingState.values()));
-                if (filter.getPageParameter().isPresent()) {
-                    bookings = bookingRepository.findByItemUserIdAndStateIn(
-                            owner.getId(),
-                            states,
-                            PageRequest.of(
-                                    filter.getPageParameter().getPage(),
-                                    filter.getPageParameter().getSize(),
-                                    Sort.by("start").descending()
-                            )
-                    );
-                } else {
-                    bookings = bookingRepository.findByItemUserIdAndStateIn(
-                            owner.getId(),
-                            states,
-                            Sort.by("start").descending()
-                    );
-                }
+                bookings = bookingRepository.findByItemUserIdAndStateIn(
+                        owner.getId(),
+                        states,
+                        filter.getPageRequest()
+                );
                 break;
             case APPROVED:
             case REJECTED:
@@ -166,14 +140,14 @@ public class BookingServiceImpl implements BookingService {
                 bookings = bookingRepository.findByItemUserIdAndStateIn(
                         owner.getId(),
                         states,
-                        Sort.by("start").descending()
+                        filter.getPageRequest()
                 );
                 break;
             case PAST:
                 bookings = bookingRepository.findByItemUserIdAndEndBeforeOrderByStartDesc(
                         owner.getId(),
                         LocalDateTime.now(),
-                        Sort.by("start").descending()
+                        filter.getPageRequest()
                 );
                 break;
             case CURRENT:
@@ -181,14 +155,14 @@ public class BookingServiceImpl implements BookingService {
                         owner.getId(),
                         LocalDateTime.now(),
                         LocalDateTime.now(),
-                        Sort.by("start").descending()
+                        filter.getPageRequest()
                 );
                 break;
             case FUTURE:
                 bookings = bookingRepository.findByItemUserIdAndStartAfterOrderByStartDesc(
                         owner.getId(),
                         LocalDateTime.now(),
-                        Sort.by("start").descending()
+                        filter.getPageRequest()
                 );
                 break;
             default:

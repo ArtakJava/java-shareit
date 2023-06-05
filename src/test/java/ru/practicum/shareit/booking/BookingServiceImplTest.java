@@ -5,18 +5,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.PageRequestCustom;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingDtoWithInfo;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.exception.*;
 import ru.practicum.shareit.item.ItemMapper;
-import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.messageManager.MessageHolder;
 import ru.practicum.shareit.user.UserMapper;
-import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.model.User;
 
 import javax.persistence.EntityManager;
@@ -37,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 @TestPropertySource(locations = "classpath:test.properties")
 public class BookingServiceImplTest {
+    private static final Sort SORT_BY_START_DESC = Sort.by("start").descending();
     private final BookingService service;
     private final EntityManager em;
     private User user;
@@ -221,35 +222,6 @@ public class BookingServiceImplTest {
     }
 
     @Test
-    void testAllByBooker() {
-        String startInstrForSecondBooking = "2023-08-05 11:30:40";
-        String endInstrForSecondBooking = "2023-08-05 11:50:40";
-        LocalDateTime startForSecondBooking = LocalDateTime.parse(startInstrForSecondBooking, formatter);
-        LocalDateTime endForSecondBooking = LocalDateTime.parse(endInstrForSecondBooking, formatter);
-        List<Booking> sourceBookings = List.of(
-                makeBookingEntity(start, end, item, booker, BookingState.WAITING),
-                makeBookingEntity(startForSecondBooking, endForSecondBooking, item, booker, BookingState.WAITING)
-        );
-        for (Booking booking : sourceBookings) {
-            em.persist(booking);
-        }
-        em.flush();
-        List<BookingDtoWithInfo> bookings = service.getAllByBooker(booker.getId(),
-                new Filter(new StateHolder("ALL"), new PageParameter(null, null)));
-        assertThat(bookings, hasSize(sourceBookings.size()));
-        for (Booking booking: sourceBookings) {
-            assertThat(bookings, hasItem(allOf(
-                    hasProperty("id", notNullValue()),
-                    hasProperty("start", equalTo(booking.getStart())),
-                    hasProperty("end", equalTo(booking.getEnd())),
-                    hasProperty("booker", equalTo(UserMapper.mapToUserDto(booking.getBooker()))),
-                    hasProperty("item", equalTo(ItemMapper.mapToItemDto(booking.getItem()))),
-                    hasProperty("status", equalTo(booking.getState()))
-            )));
-        }
-    }
-
-    @Test
     void testGetAllByBookerWithPageParameter() {
         String startInstrForSecondBooking = "2023-08-05 11:30:40";
         String endInstrForSecondBooking = "2023-08-05 11:50:40";
@@ -263,8 +235,13 @@ public class BookingServiceImplTest {
             em.persist(booking);
         }
         em.flush();
-        List<BookingDtoWithInfo> bookings = service.getAllByBooker(booker.getId(),
-                new Filter(new StateHolder("ALL"), new PageParameter(0, 3)));
+        List<BookingDtoWithInfo> bookings = service.getAllByBooker(
+                booker.getId(),
+                new Filter(
+                        new StateHolder("ALL"),
+                        new PageRequestCustom(0, 3, SORT_BY_START_DESC)
+                )
+        );
         assertThat(bookings, hasSize(sourceBookings.size()));
         for (Booking booking: sourceBookings) {
             assertThat(bookings, hasItem(allOf(
@@ -292,8 +269,13 @@ public class BookingServiceImplTest {
             em.persist(booking);
         }
         em.flush();
-        List<BookingDtoWithInfo> bookings = service.getAllByBooker(booker.getId(),
-                new Filter(new StateHolder("WAITING"), new PageParameter(0, 3)));
+        List<BookingDtoWithInfo> bookings = service.getAllByBooker(
+                booker.getId(),
+                new Filter(
+                        new StateHolder("WAITING"),
+                        new PageRequestCustom(0, 3, SORT_BY_START_DESC)
+                )
+        );
         assertThat(bookings, hasSize(sourceBookings.size()));
         for (Booking booking: sourceBookings) {
             assertThat(bookings, hasItem(allOf(
@@ -325,8 +307,13 @@ public class BookingServiceImplTest {
             em.persist(booking);
         }
         em.flush();
-        List<BookingDtoWithInfo> bookings = service.getAllByBooker(booker.getId(),
-                new Filter(new StateHolder("PAST"), new PageParameter(0, 3)));
+        List<BookingDtoWithInfo> bookings = service.getAllByBooker(
+                booker.getId(),
+                new Filter(
+                        new StateHolder("PAST"),
+                        new PageRequestCustom(0, 3, SORT_BY_START_DESC)
+                )
+        );
         assertThat(bookings, hasSize(sourceBookings.size()));
         for (Booking booking: sourceBookings) {
             assertThat(bookings, hasItem(allOf(
@@ -358,8 +345,13 @@ public class BookingServiceImplTest {
             em.persist(booking);
         }
         em.flush();
-        List<BookingDtoWithInfo> bookings = service.getAllByBooker(booker.getId(),
-                new Filter(new StateHolder("CURRENT"), new PageParameter(0, 3)));
+        List<BookingDtoWithInfo> bookings = service.getAllByBooker(
+                booker.getId(),
+                new Filter(
+                        new StateHolder("CURRENT"),
+                        new PageRequestCustom(0, 3, SORT_BY_START_DESC)
+                )
+        );
         assertThat(bookings, hasSize(sourceBookings.size()));
         for (Booking booking: sourceBookings) {
             assertThat(bookings, hasItem(allOf(
@@ -391,37 +383,13 @@ public class BookingServiceImplTest {
             em.persist(booking);
         }
         em.flush();
-        List<BookingDtoWithInfo> bookings = service.getAllByBooker(booker.getId(),
-                new Filter(new StateHolder("FUTURE"), new PageParameter(0, 3)));
-        assertThat(bookings, hasSize(sourceBookings.size()));
-        for (Booking booking: sourceBookings) {
-            assertThat(bookings, hasItem(allOf(
-                    hasProperty("id", notNullValue()),
-                    hasProperty("start", equalTo(booking.getStart())),
-                    hasProperty("end", equalTo(booking.getEnd())),
-                    hasProperty("booker", equalTo(UserMapper.mapToUserDto(booking.getBooker()))),
-                    hasProperty("item", equalTo(ItemMapper.mapToItemDto(booking.getItem()))),
-                    hasProperty("status", equalTo(booking.getState()))
-            )));
-        }
-    }
-
-    @Test
-    void testGetAllByOwner() {
-        String startInstrForSecondBooking = "2023-08-05 11:30:40";
-        String endInstrForSecondBooking = "2023-08-05 11:50:40";
-        LocalDateTime startForSecondBooking = LocalDateTime.parse(startInstrForSecondBooking, formatter);
-        LocalDateTime endForSecondBooking = LocalDateTime.parse(endInstrForSecondBooking, formatter);
-        List<Booking> sourceBookings = List.of(
-                makeBookingEntity(start, end, item, booker, BookingState.WAITING),
-                makeBookingEntity(startForSecondBooking, endForSecondBooking, item, booker, BookingState.WAITING)
+        List<BookingDtoWithInfo> bookings = service.getAllByBooker(
+                booker.getId(),
+                new Filter(
+                        new StateHolder("FUTURE"),
+                        new PageRequestCustom(0, 3, SORT_BY_START_DESC)
+                )
         );
-        for (Booking booking : sourceBookings) {
-            em.persist(booking);
-        }
-        em.flush();
-        List<BookingDtoWithInfo> bookings = service.getAllByOwner(user.getId(),
-                new Filter(new StateHolder("ALL"), new PageParameter(null, null)));
         assertThat(bookings, hasSize(sourceBookings.size()));
         for (Booking booking: sourceBookings) {
             assertThat(bookings, hasItem(allOf(
@@ -449,8 +417,13 @@ public class BookingServiceImplTest {
             em.persist(booking);
         }
         em.flush();
-        List<BookingDtoWithInfo> bookings = service.getAllByOwner(user.getId(),
-                new Filter(new StateHolder("ALL"), new PageParameter(0, 3)));
+        List<BookingDtoWithInfo> bookings = service.getAllByOwner(
+                user.getId(),
+                new Filter(
+                        new StateHolder("ALL"),
+                        new PageRequestCustom(0, 3, SORT_BY_START_DESC)
+                )
+        );
         assertThat(bookings, hasSize(sourceBookings.size()));
         for (Booking booking: sourceBookings) {
             assertThat(bookings, hasItem(allOf(
@@ -478,8 +451,13 @@ public class BookingServiceImplTest {
             em.persist(booking);
         }
         em.flush();
-        List<BookingDtoWithInfo> bookings = service.getAllByOwner(user.getId(),
-                new Filter(new StateHolder("WAITING"), new PageParameter(0, 3)));
+        List<BookingDtoWithInfo> bookings = service.getAllByOwner(
+                user.getId(),
+                new Filter(
+                        new StateHolder("WAITING"),
+                        new PageRequestCustom(0, 3, SORT_BY_START_DESC)
+                )
+        );
         assertThat(bookings, hasSize(sourceBookings.size()));
         for (Booking booking: sourceBookings) {
             assertThat(bookings, hasItem(allOf(
@@ -494,7 +472,7 @@ public class BookingServiceImplTest {
     }
 
     @Test
-    void testGetAllByOwnerWithWronState() {
+    void testGetAllByOwnerWithWrongState() {
         String startInstrForSecondBooking = "2023-08-05 11:30:40";
         String endInstrForSecondBooking = "2023-08-05 11:50:40";
         LocalDateTime startForSecondBooking = LocalDateTime.parse(startInstrForSecondBooking, formatter);
@@ -509,32 +487,15 @@ public class BookingServiceImplTest {
         em.flush();
         final UnSupportedStatusException exception = assertThrows(
                 UnSupportedStatusException.class,
-                () -> service.getAllByOwner(user.getId(),
-                        new Filter(new StateHolder("UNSUPPORTED_STATE"), new PageParameter(0, 3)))
+                () -> service.getAllByOwner(
+                        user.getId(),
+                        new Filter(
+                                new StateHolder("UNSUPPORTED_STATE"),
+                                new PageRequestCustom(0, 3, SORT_BY_START_DESC)
+                        )
+                )
         );
         assertEquals(String.format(MessageHolder.UNSUPPORTED_STATUS, "UNSUPPORTED_STATE"), exception.getMessage());
-    }
-
-    @Test
-    void testGetAllByOwnerWithWrongPageParameter() {
-        String startInstrForSecondBooking = "2023-08-05 11:30:40";
-        String endInstrForSecondBooking = "2023-08-05 11:50:40";
-        LocalDateTime startForSecondBooking = LocalDateTime.parse(startInstrForSecondBooking, formatter);
-        LocalDateTime endForSecondBooking = LocalDateTime.parse(endInstrForSecondBooking, formatter);
-        List<Booking> sourceBookings = List.of(
-                makeBookingEntity(start, end, item, booker, BookingState.WAITING),
-                makeBookingEntity(startForSecondBooking, endForSecondBooking, item, booker, BookingState.WAITING)
-        );
-        for (Booking booking : sourceBookings) {
-            em.persist(booking);
-        }
-        em.flush();
-        final NotValidParameterException exception = assertThrows(
-                NotValidParameterException.class,
-                () -> service.getAllByOwner(user.getId(),
-                        new Filter(new StateHolder("ALL"), new PageParameter(-1, 3)))
-        );
-        assertEquals(String.format(MessageHolder.NOT_VALID_PARAMETER, -1), exception.getMessage());
     }
 
     @Test
@@ -555,8 +516,13 @@ public class BookingServiceImplTest {
             em.persist(booking);
         }
         em.flush();
-        List<BookingDtoWithInfo> bookings = service.getAllByOwner(user.getId(),
-                new Filter(new StateHolder("PAST"), new PageParameter(0, 3)));
+        List<BookingDtoWithInfo> bookings = service.getAllByOwner(
+                user.getId(),
+                new Filter(
+                        new StateHolder("PAST"),
+                        new PageRequestCustom(0, 3, SORT_BY_START_DESC)
+                )
+        );
         assertThat(bookings, hasSize(sourceBookings.size()));
         for (Booking booking: sourceBookings) {
             assertThat(bookings, hasItem(allOf(
@@ -588,8 +554,13 @@ public class BookingServiceImplTest {
             em.persist(booking);
         }
         em.flush();
-        List<BookingDtoWithInfo> bookings = service.getAllByOwner(user.getId(),
-                new Filter(new StateHolder("CURRENT"), new PageParameter(0, 3)));
+        List<BookingDtoWithInfo> bookings = service.getAllByOwner(
+                user.getId(),
+                new Filter(
+                        new StateHolder("CURRENT"),
+                        new PageRequestCustom(0, 3, SORT_BY_START_DESC)
+                )
+        );
         assertThat(bookings, hasSize(sourceBookings.size()));
         for (Booking booking: sourceBookings) {
             assertThat(bookings, hasItem(allOf(
@@ -621,8 +592,13 @@ public class BookingServiceImplTest {
             em.persist(booking);
         }
         em.flush();
-        List<BookingDtoWithInfo> bookings = service.getAllByOwner(user.getId(),
-                new Filter(new StateHolder("FUTURE"), new PageParameter(0, 3)));
+        List<BookingDtoWithInfo> bookings = service.getAllByOwner(
+                user.getId(),
+                new Filter(
+                        new StateHolder("FUTURE"),
+                        new PageRequestCustom(0, 3, SORT_BY_START_DESC)
+                )
+        );
         assertThat(bookings, hasSize(sourceBookings.size()));
         for (Booking booking: sourceBookings) {
             assertThat(bookings, hasItem(allOf(
@@ -681,13 +657,6 @@ public class BookingServiceImplTest {
         return user;
     }
 
-    private UserDto makeUserDto(String name, String email) {
-        UserDto userDto = new UserDto();
-        userDto.setName(name);
-        userDto.setEmail(email);
-        return userDto;
-    }
-
     private Item makeItemEntity(String name, String description, Boolean available, User user) {
         Item item = new Item();
         item.setName(name);
@@ -695,15 +664,6 @@ public class BookingServiceImplTest {
         item.setAvailable(available);
         item.setUser(user);
         return item;
-    }
-
-    private ItemDtoWithBooking makeItemDtoWithBooking(String name, String description, Boolean available, long requestId) {
-        ItemDtoWithBooking itemDtoWithBooking = new ItemDtoWithBooking();
-        itemDtoWithBooking.setName(name);
-        itemDtoWithBooking.setDescription(description);
-        itemDtoWithBooking.setAvailable(available);
-        itemDtoWithBooking.setRequestId(requestId);
-        return itemDtoWithBooking;
     }
 
     private Booking makeBookingEntity(LocalDateTime dateTimeOne,
