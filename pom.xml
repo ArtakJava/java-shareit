@@ -147,6 +147,9 @@
 					<version>0.8.8</version>
 					<configuration>
 						<output>file</output>
+						<excludes>
+							<exclude>**/PageRequestCustom.class</exclude>
+						</excludes>
 					</configuration>
 					<executions>
 						<execution>
