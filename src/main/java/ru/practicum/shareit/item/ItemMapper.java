@@ -21,6 +21,7 @@ public class ItemMapper {
                 .description(item.getDescription())
                 .available(item.getAvailable())
                 .comments(new ArrayList<>())
+                .requestId(item.getRequest() != null ? item.getRequest().getId() : null)
                 .build();
     }
 
@@ -53,6 +54,16 @@ public class ItemMapper {
                 .lastBooking(lastBooking)
                 .nextBooking(nextBooking)
                 .comments(comments)
+                .build();
+    }
+
+    public static ItemDtoWithOutBooking mapToItemDtoWithOutBooking(Item item) {
+        return ItemDtoWithOutBooking.builder()
+                .id(item.getId())
+                .name(item.getName())
+                .description(item.getDescription())
+                .available(item.getAvailable())
+                .requestId(item.getRequest().getId())
                 .build();
     }
 

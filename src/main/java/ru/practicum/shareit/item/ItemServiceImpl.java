@@ -2,8 +2,12 @@ package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.booking.BookingMapper;
+import ru.practicum.shareit.booking.BookingState;
 import ru.practicum.shareit.booking.dao.BookingRepository;
 import ru.practicum.shareit.booking.dto.BookingDtoWithBooker;
 import ru.practicum.shareit.booking.dto.BookingDtoWithBookerAndItem;
@@ -18,12 +22,11 @@ import ru.practicum.shareit.item.dao.ItemRepository;
 import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
 import ru.practicum.shareit.item.dto.ItemDtoWithOutBooking;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.messageManager.ErrorMessage;
-import ru.practicum.shareit.messageManager.InfoMessage;
+import ru.practicum.shareit.messageManager.MessageHolder;
+import ru.practicum.shareit.request.dao.RequestRepository;
 import ru.practicum.shareit.user.dao.UserRepository;
 import ru.practicum.shareit.user.model.User;
 
-import javax.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,40 +37,52 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class ItemServiceImpl implements ItemService {
+    public static final Sort SORT_BY_START_DESC = Sort.by("start").descending();
+    public static final Sort SORT_BY_START_ASC = Sort.by("start").ascending();
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
     private final CommentRepository commentRepository;
+    private final RequestRepository requestRepository;
 
     @Override
     public ItemDtoWithBooking create(long userId, ItemDtoWithOutBooking itemDto) {
         Item item = ItemMapper.mapToItemEntity(itemDto);
-        User user = userRepository.getReferenceById(userId);
-        if (user.getName() != null) {
-            item.setUser(user);
-            ItemDtoWithBooking result = ItemMapper.mapToItemDto(itemRepository.save(item));
-            log.info(InfoMessage.SUCCESS_CREATE, result);
-            return result;
-        } else {
-            throw new EntityNotFoundException(String.format(ErrorMessage.OWNER_ID_NOT_FOUND_FOR_ITEM, user, item.getId()));
+        User user = getUser(userId);
+        item.setUser(user);
+        Long requestId = itemDto.getRequestId();
+        if (requestId != null) {
+            item.setRequest(requestRepository.getReferenceById(itemDto.getRequestId()));
         }
+        ItemDtoWithBooking result = ItemMapper.mapToItemDto(itemRepository.save(item));
+        log.info(MessageHolder.SUCCESS_CREATE, result);
+        return result;
     }
 
     @Override
     public ItemDtoWithBooking get(long userId, long itemId) {
+        User user = getUser(userId);
         Item item = itemRepository.getReferenceById(itemId);
         ItemDtoWithBooking itemDto;
         BookingDtoWithBooker lastBooking = null;
         BookingDtoWithBooker nextBooking = null;
         List<CommentDto> comments;
-        if (userId == item.getUser().getId()) {
-            List<BookingDtoWithBooker> lastBookings = bookingRepository.findLastBookingForItem(
-                    itemId,
-                    LocalDateTime.now()
+        if (item.getUser().getId() == user.getId()) {
+            List<BookingDtoWithBooker> lastBookings = BookingMapper.mapBooksToBookingsDtoWithBooker(
+                    bookingRepository.findByItemIdAndStateNotAndStartBefore(
+                            itemId,
+                            BookingState.REJECTED,
+                            LocalDateTime.now(),
+                            PageRequest.of(0, 1, SORT_BY_START_DESC)
+                    )
             );
-            List<BookingDtoWithBooker> nextBookings = bookingRepository.findNextBookingForItem(
-                    itemId,
-                    LocalDateTime.now()
+            List<BookingDtoWithBooker> nextBookings = BookingMapper.mapBooksToBookingsDtoWithBooker(
+                    bookingRepository.findByItemIdAndStateNotAndStartAfter(
+                            itemId,
+                            BookingState.REJECTED,
+                            LocalDateTime.now(),
+                            PageRequest.of(0, 1, SORT_BY_START_ASC)
+                    )
             );
             if (!lastBookings.isEmpty()) {
                 lastBooking = lastBookings.get(0);
@@ -80,30 +95,32 @@ public class ItemServiceImpl implements ItemService {
                 .map(CommentMapper::mapToCommentDto)
                 .collect(Collectors.toList());
         itemDto = ItemMapper.mapToItemDtoWithBookingsAndComments(item, lastBooking, nextBooking, comments);
-        log.info(InfoMessage.SUCCESS_GET, itemDto);
+        log.info(MessageHolder.SUCCESS_GET, itemDto);
         return itemDto;
     }
 
     @Override
     public List<ItemDtoWithBooking> getAllByUser(long userId) {
-        List<ItemDtoWithBooking> itemsByUser = itemRepository.findAllByUserOrderById(userRepository.getReferenceById(userId)).stream()
+        User user = getUser(userId);
+        List<ItemDtoWithBooking> itemsByUser = itemRepository.findAllByUserOrderById(user).stream()
                 .map(ItemMapper::mapToItemDto)
                 .collect(Collectors.toList());
-
         List<Comment> allComments = commentRepository.findByItemIdIn(
                 itemsByUser.stream()
                         .map(ItemDtoWithBooking::getId)
                         .collect(Collectors.toSet()));
         Map<Long, List<Comment>> commentsByItem = allComments.stream()
                 .collect(Collectors.groupingBy(comment -> comment.getItem().getId()));
-        List<BookingDtoWithBookerAndItem> nextBookingDtoWithBookers = bookingRepository.findNextBookingForItemsByUser(userId, LocalDateTime.now());
-        log.info(InfoMessage.SUCCESS_GET_ALL_ITEMS_BY_USER, userId);
+        List<BookingDtoWithBookerAndItem> nextBookingDtoWithBookers =
+                bookingRepository.findNextBookingForItemsByUser(userId, LocalDateTime.now());
+        log.info(MessageHolder.SUCCESS_GET_ALL_ITEMS_BY_USER, userId);
         Map<Long, BookingDtoWithBooker> nextBookingByItem = nextBookingDtoWithBookers.stream()
                 .collect(Collectors.toMap(
                         BookingDtoWithBookerAndItem::getItemId,
                         dto -> new BookingDtoWithBooker(dto.getId(), dto.getBookerId()), (first, second) -> second));
-        List<BookingDtoWithBookerAndItem> lastBookingDtoWithBookers = bookingRepository.findLastBookingForItemsByUser(userId, LocalDateTime.now());
-        log.info(InfoMessage.SUCCESS_GET_ALL_ITEMS_BY_USER, userId);
+        List<BookingDtoWithBookerAndItem> lastBookingDtoWithBookers =
+                bookingRepository.findLastBookingForItemsByUser(userId, LocalDateTime.now());
+        log.info(MessageHolder.SUCCESS_GET_ALL_ITEMS_BY_USER, userId);
         Map<Long, BookingDtoWithBooker> lastBookingByItem = lastBookingDtoWithBookers.stream()
                 .collect(Collectors.toMap(
                         BookingDtoWithBookerAndItem::getItemId,
@@ -123,23 +140,25 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     @Override
     public ItemDtoWithBooking update(long userId, long itemId, ItemDtoWithOutBooking itemDtoPatch) {
+        User user = getUser(userId);
         Item oldItem = itemRepository.getReferenceById(itemId);
-        if (oldItem.getUser().getId() == userId) {
+        if (oldItem.getUser().getId() == user.getId()) {
             Item result = itemRepository.save(getUpdatedItem(oldItem, ItemMapper.mapToItemEntity(itemDtoPatch)));
-            log.info(InfoMessage.SUCCESS_UPDATE, ItemMapper.mapToItemDto(result));
+            log.info(MessageHolder.SUCCESS_UPDATE, ItemMapper.mapToItemDto(result));
             return ItemMapper.mapToItemDto(result);
         } else {
             throw new NotValidOwnerForUpdateException(
-                    String.format(ErrorMessage.USER_ID_NOT_VALID, userId, itemId));
+                    String.format(MessageHolder.USER_ID_NOT_VALID, userId, itemId));
         }
     }
 
     @Transactional
     @Override
     public void delete(long userId, long itemId) {
-        if (itemRepository.getReferenceById(itemId).getUser().getId() == userId) {
+        User user = getUser(userId);
+        if (itemRepository.getReferenceById(itemId).getUser().getId() == user.getId()) {
             itemRepository.delete(itemRepository.getReferenceById(itemId));
-            log.info(InfoMessage.SUCCESS_DELETE, itemId);
+            log.info(MessageHolder.SUCCESS_DELETE, itemId);
         }
     }
 
@@ -153,7 +172,7 @@ public class ItemServiceImpl implements ItemService {
                     .map(ItemMapper::mapToItemDto)
                     .collect(Collectors.toList());
         }
-        log.info(InfoMessage.SUCCESS_SEARCH_ITEMS, text);
+        log.info(MessageHolder.SUCCESS_SEARCH_ITEMS, text);
         return items;
     }
 
@@ -175,14 +194,24 @@ public class ItemServiceImpl implements ItemService {
     public CommentDto createComment(long authorId, long itemId, CommentDto commentDto) {
         List<Booking> booking = bookingRepository.findByBookerIdAndItemIdAndEndBefore(authorId, itemId, LocalDateTime.now());
         if (!booking.isEmpty()) {
-            User user = userRepository.getReferenceById(authorId);
+            User user = getUser(authorId);
             Item item = itemRepository.getReferenceById(itemId);
             Comment comment = CommentMapper.mapToCommentEntity(commentDto, user, item);
             CommentDto result = CommentMapper.mapToCommentDto(commentRepository.save(comment));
-            log.info(InfoMessage.GET_UPDATE_REQUEST, itemId);
+            log.info(MessageHolder.GET_UPDATE_REQUEST, itemId);
             return result;
         } else {
-            throw new UnBookingCommentException(String.format(ErrorMessage.AUTHOR_NOT_BOOKING, authorId, itemId));
+            throw new UnBookingCommentException(String.format(MessageHolder.AUTHOR_NOT_BOOKING, authorId, itemId));
         }
+    }
+
+    @Override
+    public User getUser(long userId) {
+        User result = new User();
+        User user = userRepository.getReferenceById(userId);
+        if (user.getName() != null) {
+            result = user;
+        }
+        return result;
     }
 }

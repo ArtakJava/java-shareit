@@ -1,30 +1,31 @@
-package ru.practicum.shareit.user.model;
+package ru.practicum.shareit.request.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.practicum.shareit.messageManager.MessageHolder;
+import ru.practicum.shareit.user.model.User;
 
 import javax.persistence.*;
-import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users", schema = "public")
+@Table(name = "requests", schema = "public")
 @Builder
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class User {
+public class Request {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
-    @NotBlank(message = MessageHolder.USER_EMPTY_NAME)
-    private String name;
     @NotBlank
-    @Email(message = MessageHolder.USER_EMAIL)
-    private String email;
+    private String description;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "requestor_id")
+    private User requestor;
+    private LocalDateTime created;
 }

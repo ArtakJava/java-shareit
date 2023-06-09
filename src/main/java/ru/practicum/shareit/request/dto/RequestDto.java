@@ -1,22 +1,23 @@
-package ru.practicum.shareit.comment.dto;
+package ru.practicum.shareit.request.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.practicum.shareit.messageManager.MessageHolder;
+import ru.practicum.shareit.item.dto.ItemDtoWithOutBooking;
 
 import javax.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
-public class CommentDto {
+@NoArgsConstructor
+public class RequestDto {
     private long id;
-    @NotBlank(message = MessageHolder.COMMENT_EMPTY_TEXT)
-    private String text;
-    private String authorName;
+    @NotBlank
+    private String description;
     private String created = LocalDateTime.now().toString();
+    private List<ItemDtoWithOutBooking> items;
 }
