@@ -72,15 +72,8 @@ public class ErrorHandler {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse handleUnSupportedState(final UnSupportedStatusException e) {
-        log.info("400 {}", e.getMessage());
-        return new ErrorResponse(e.getMessage());
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleMethodArgumentNotValidException(final MethodArgumentNotValidException e) {
-        log.info("500 {}", e.getMessage());
+        log.info("400 {}", e.getMessage());
         return new ErrorResponse(e.getMessage());
     }
 

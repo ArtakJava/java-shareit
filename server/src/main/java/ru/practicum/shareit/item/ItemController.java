@@ -8,7 +8,6 @@ import ru.practicum.shareit.item.dto.ItemDtoWithBooking;
 import ru.practicum.shareit.item.dto.ItemDtoWithOutBooking;
 import ru.practicum.shareit.messageManager.MessageHolder;
 
-import javax.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -20,7 +19,7 @@ public class ItemController {
 
     @PostMapping
     public ItemDtoWithBooking create(@RequestHeader("X-Sharer-User-Id") long userId,
-                                     @Valid @RequestBody ItemDtoWithOutBooking itemDto) {
+                                     @RequestBody ItemDtoWithOutBooking itemDto) {
         log.info(MessageHolder.GET_CREATE_REQUEST, itemDto);
         return service.create(userId, itemDto);
     }
@@ -60,7 +59,7 @@ public class ItemController {
     @PostMapping("/{itemId}/comment")
     public CommentDto createComment(@RequestHeader("X-Sharer-User-Id") long userId,
                                     @PathVariable long itemId,
-                                    @Valid @RequestBody CommentDto commentDto) {
+                                    @RequestBody CommentDto commentDto) {
         log.info(MessageHolder.GET_UPDATE_REQUEST, itemId);
         return service.createComment(userId, itemId, commentDto);
     }

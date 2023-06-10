@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.messageManager.MessageHolder;
 import ru.practicum.shareit.user.dto.UserDto;
 
-import javax.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -17,7 +16,7 @@ public class UserController {
     private final UserService service;
 
     @PostMapping
-    public UserDto create(@Valid @RequestBody UserDto userDto) {
+    public UserDto create(@RequestBody UserDto userDto) {
         log.info(MessageHolder.GET_CREATE_REQUEST, userDto);
         return service.create(userDto);
     }

@@ -3,30 +3,25 @@ package ru.practicum.shareit.booking;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.PageRequestCustom;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingDtoWithInfo;
 import ru.practicum.shareit.messageManager.MessageHolder;
 
-import javax.validation.Valid;
-import javax.validation.constraints.Positive;
-import javax.validation.constraints.PositiveOrZero;
 import java.util.List;
 
 @RestController
 @RequestMapping("/bookings")
 @RequiredArgsConstructor
 @Slf4j
-@Validated
 public class BookingController {
     public static final Sort SORT_BY_START_DESC = Sort.by("start").descending();
     public static final String DEFAULT_SIZE_OF_PAGE = "10";
     private final BookingService service;
 
     @PostMapping
-    public BookingDtoWithInfo create(@RequestHeader("X-Sharer-User-Id") long userId, @Valid @RequestBody BookingDto bookingDto) {
+    public BookingDtoWithInfo create(@RequestHeader("X-Sharer-User-Id") long userId, @RequestBody BookingDto bookingDto) {
         log.info(MessageHolder.GET_CREATE_REQUEST, bookingDto);
         return service.create(userId, bookingDto);
     }
@@ -40,8 +35,8 @@ public class BookingController {
     @GetMapping
     public List<BookingDtoWithInfo> getAllByBooker(@RequestHeader("X-Sharer-User-Id") long userId,
                                                    @RequestParam(defaultValue = "ALL") String state,
-                                                   @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
-                                                   @Positive @RequestParam(defaultValue = DEFAULT_SIZE_OF_PAGE) Integer size) {
+                                                   @RequestParam(defaultValue = "0") Integer from,
+                                                   @RequestParam(defaultValue = DEFAULT_SIZE_OF_PAGE) Integer size) {
         log.info(MessageHolder.GET_ALL_REQUEST);
         return service.getAllByBooker(
                 userId, new Filter(new StateHolder(state), new PageRequestCustom(from, size, SORT_BY_START_DESC))
@@ -51,8 +46,8 @@ public class BookingController {
     @GetMapping("/owner")
     public List<BookingDtoWithInfo> getAllByOwner(@RequestHeader("X-Sharer-User-Id") long userId,
                                                   @RequestParam(defaultValue = "ALL") String state,
-                                                  @PositiveOrZero @RequestParam(defaultValue = "0") Integer from,
-                                                  @Positive @RequestParam(defaultValue = DEFAULT_SIZE_OF_PAGE) Integer size) {
+                                                  @RequestParam(defaultValue = "0") Integer from,
+                                                  @RequestParam(defaultValue = DEFAULT_SIZE_OF_PAGE) Integer size) {
         log.info(MessageHolder.GET_ALL_REQUEST);
         return service.getAllByOwner(
                 userId, new Filter(new StateHolder(state), new PageRequestCustom(from, size, SORT_BY_START_DESC))

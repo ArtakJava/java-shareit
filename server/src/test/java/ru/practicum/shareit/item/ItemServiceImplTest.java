@@ -17,7 +17,6 @@ import ru.practicum.shareit.item.dto.ItemDtoWithOutBooking;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.messageManager.MessageHolder;
 import ru.practicum.shareit.request.dto.RequestDto;
-import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.model.User;
 
 import javax.persistence.EntityManager;
@@ -230,7 +229,7 @@ public class ItemServiceImplTest {
                 UnBookingCommentException.class,
                 () -> service.createComment(user.getId(), item.getId(), commentDto)
         );
-        assertEquals(String.format(new MessageHolder().AUTHOR_NOT_BOOKING, user.getId(), item.getId()), exception.getMessage());
+        assertEquals(String.format(MessageHolder.AUTHOR_NOT_BOOKING, user.getId(), item.getId()), exception.getMessage());
     }
 
     private User makeUserEntity(String name, String email) {
@@ -238,13 +237,6 @@ public class ItemServiceImplTest {
         user.setName(name);
         user.setEmail(email);
         return user;
-    }
-
-    private UserDto makeUserDto(String name, String email) {
-        UserDto userDto = new UserDto();
-        userDto.setName(name);
-        userDto.setEmail(email);
-        return userDto;
     }
 
     private Item makeItemEntity(String name, String description, Boolean available, User user) {

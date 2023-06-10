@@ -472,33 +472,6 @@ public class BookingServiceImplTest {
     }
 
     @Test
-    void testGetAllByOwnerWithWrongState() {
-        String startInstrForSecondBooking = "2023-08-05 11:30:40";
-        String endInstrForSecondBooking = "2023-08-05 11:50:40";
-        LocalDateTime startForSecondBooking = LocalDateTime.parse(startInstrForSecondBooking, formatter);
-        LocalDateTime endForSecondBooking = LocalDateTime.parse(endInstrForSecondBooking, formatter);
-        List<Booking> sourceBookings = List.of(
-                makeBookingEntity(start, end, item, booker, BookingState.WAITING),
-                makeBookingEntity(startForSecondBooking, endForSecondBooking, item, booker, BookingState.WAITING)
-        );
-        for (Booking booking : sourceBookings) {
-            em.persist(booking);
-        }
-        em.flush();
-        final UnSupportedStatusException exception = assertThrows(
-                UnSupportedStatusException.class,
-                () -> service.getAllByOwner(
-                        user.getId(),
-                        new Filter(
-                                new StateHolder("UNSUPPORTED_STATE"),
-                                new PageRequestCustom(0, 3, SORT_BY_START_DESC)
-                        )
-                )
-        );
-        assertEquals(String.format(MessageHolder.UNSUPPORTED_STATUS, "UNSUPPORTED_STATE"), exception.getMessage());
-    }
-
-    @Test
     void testGetAllByOwnerWithPageParameterWithApprovedStateWithPastBooking() {
         String startInstr = "2022-05-05 11:30:40";
         String endInstr = "2022-07-05 11:50:40";

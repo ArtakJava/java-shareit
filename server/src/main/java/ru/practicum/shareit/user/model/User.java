@@ -5,11 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.practicum.shareit.messageManager.MessageHolder;
 
 import javax.persistence.*;
-import javax.validation.constraints.Email;
-import javax.validation.constraints.NotBlank;
 
 @Entity
 @Table(name = "users", schema = "public")
@@ -22,9 +19,6 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
-    @NotBlank(message = MessageHolder.USER_EMPTY_NAME)
     private String name;
-    @NotBlank
-    @Email(message = MessageHolder.USER_EMAIL)
     private String email;
 }
